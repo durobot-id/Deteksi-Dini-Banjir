@@ -22,7 +22,6 @@ export default function FloodDashboard() {
     error,
     lastUpdated,
     isDeviceOnline,
-    isDataStale,
     persen,
     clearHistory,
   } = useFloodData();
@@ -73,7 +72,7 @@ export default function FloodDashboard() {
 
   return (
     <>
-      <Header isOnline={isDeviceOnline} lastUpdated={lastUpdated} isStale={isDataStale} />
+      <Header isOnline={isDeviceOnline} />
 
       <main className="max-w-4xl mx-auto px-4 py-4 pb-24 flex flex-col gap-4 animate-fadeInUp">
         {data && (status === 'bahaya' || status === 'kritis') && (

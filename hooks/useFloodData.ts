@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { ref, onValue, off } from 'firebase/database';
+import { ref, onValue, off, set } from 'firebase/database';
 import { database } from '@/lib/firebase';
 import {
   SensorData,
@@ -11,7 +11,7 @@ import {
 } from '@/lib/types';
 
 const HISTORY_KEY = 'flood_alert_history';
-const MAX_HISTORY = 48; // 48 titik data
+const MAX_HISTORY = 48;
 
 function loadHistory(): HistoryEntry[] {
   if (typeof window === 'undefined') return [];
@@ -37,6 +37,7 @@ export function useFloodData() {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const prevKetinggianRef = useRef<number | null>(null);
+  const offlineSetRef = useRef(false);
 
   const addHistory = useCallback((ketinggian: number) => {
     const entry: HistoryEntry = {
@@ -52,10 +53,16 @@ export function useFloodData() {
   }, []);
 
   useEffect(() => {
-    // Load history from localStorage on mount
     setHistory(loadHistory());
 
+    const statusRef = ref(database, 'sensor_banjir/status_alat');
     const sensorRef = ref(database, 'sensor_banjir');
+
+    // Set status_alat = offline saat page load/refresh
+    if (!offlineSetRef.current) {
+      offlineSetRef.current = true;
+      set(statusRef, 'offline').catch(() => {});
+    }
 
     const unsubscribe = onValue(
       sensorRef,
@@ -64,14 +71,12 @@ export function useFloodData() {
         const val = snapshot.val() as SensorData | null;
         if (val) {
           const ketinggian = Number(val.ketinggian_air) || 0;
-          // Hitung status jika tidak disediakan
           const status = val.status_banjir || getFloodStatus(ketinggian);
           const enriched: SensorData = { ...val, status_banjir: status };
           setData(enriched);
           setLastUpdated(new Date());
           setError(null);
 
-          // Catat ke history hanya jika nilai berubah signifikan (>0.5cm) atau pertama kali
           if (
             prevKetinggianRef.current === null ||
             Math.abs(ketinggian - prevKetinggianRef.current) >= 0.5

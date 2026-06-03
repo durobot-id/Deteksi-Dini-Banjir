@@ -9,7 +9,6 @@ interface MapWidgetProps {
   status: FloodStatus;
 }
 
-// Warna lingkaran radius per status
 const RADIUS_COLORS: Record<FloodStatus, { fill: string; stroke: string }> = {
   aman:   { fill: 'rgba(16,185,129,0.12)',  stroke: '#10b981' },
   siaga:  { fill: 'rgba(245,158,11,0.14)',  stroke: '#f59e0b' },
@@ -19,16 +18,20 @@ const RADIUS_COLORS: Record<FloodStatus, { fill: string; stroke: string }> = {
 
 declare global {
   interface Window {
-    google: typeof google;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    google: any;
     initFloodMap?: () => void;
   }
 }
 
 export default function MapWidget({ data, status }: MapWidgetProps) {
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<google.maps.Map | null>(null);
-  const markerRef = useRef<google.maps.Marker | null>(null);
-  const circleRef = useRef<google.maps.Circle | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mapInstanceRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const markerRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const circleRef = useRef<any>(null);
   const [expanded, setExpanded] = useState(false);
   const [mapReady, setMapReady] = useState(false);
   const [mapError, setMapError] = useState(false);
@@ -39,7 +42,6 @@ export default function MapWidget({ data, status }: MapWidgetProps) {
   const colors = getStatusColor(status);
   const radiusColor = RADIUS_COLORS[status];
 
-  // Kalkulasi zoom otomatis berdasarkan radius
   const getZoom = (r: number) => {
     if (r <= 500)   return 16;
     if (r <= 1000)  return 15;
@@ -55,7 +57,6 @@ export default function MapWidget({ data, status }: MapWidgetProps) {
     const center = { lat, lng };
     const zoom = getZoom(radius);
 
-    // Inisialisasi map
     const map = new window.google.maps.Map(mapRef.current, {
       center,
       zoom,
@@ -74,7 +75,6 @@ export default function MapWidget({ data, status }: MapWidgetProps) {
       ],
     });
 
-    // Marker titik sensor
     const marker = new window.google.maps.Marker({
       position: center,
       map,
@@ -90,7 +90,6 @@ export default function MapWidget({ data, status }: MapWidgetProps) {
       zIndex: 10,
     });
 
-    // Info window
     const infoWindow = new window.google.maps.InfoWindow({
       content: `
         <div style="font-family:'Plus Jakarta Sans',sans-serif;padding:6px 2px;min-width:160px">
@@ -101,7 +100,6 @@ export default function MapWidget({ data, status }: MapWidgetProps) {
     });
     marker.addListener('click', () => infoWindow.open(map, marker));
 
-    // Lingkaran radius dampak banjir
     const circle = new window.google.maps.Circle({
       map,
       center,
@@ -120,23 +118,19 @@ export default function MapWidget({ data, status }: MapWidgetProps) {
     setMapReady(true);
   }, [lat, lng, radius, colors.hex, data.wilayah, radiusColor]);
 
-  // Load Google Maps script
   useEffect(() => {
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
-    // Jika sudah ada script Google Maps
     if (window.google?.maps) {
       initMap();
       return;
     }
 
-    // Jika tidak ada API key, tampilkan fallback
     if (!apiKey || apiKey === 'YOUR_GOOGLE_MAPS_API_KEY') {
       setMapError(true);
       return;
     }
 
-    // Pasang callback global
     window.initFloodMap = () => {
       initMap();
       delete window.initFloodMap;
@@ -154,7 +148,7 @@ export default function MapWidget({ data, status }: MapWidgetProps) {
     }
   }, [initMap]);
 
-  // Update circle warna & ukuran saat status/radius berubah
+  // Update warna circle & marker saat status berubah
   useEffect(() => {
     if (!circleRef.current || !mapInstanceRef.current) return;
     circleRef.current.setOptions({
@@ -172,12 +166,12 @@ export default function MapWidget({ data, status }: MapWidgetProps) {
     });
   }, [status, radius, radiusColor, colors.hex]);
 
-  // Update ukuran map saat expand/collapse
+  // Resize map saat expand/collapse
   useEffect(() => {
     if (!mapInstanceRef.current || !window.google?.maps) return;
     setTimeout(() => {
-      window.google.maps.event.trigger(mapInstanceRef.current!, 'resize');
-      mapInstanceRef.current!.setCenter({ lat, lng });
+      window.google.maps.event.trigger(mapInstanceRef.current, 'resize');
+      mapInstanceRef.current.setCenter({ lat, lng });
     }, 350);
   }, [expanded, lat, lng]);
 
@@ -195,7 +189,6 @@ export default function MapWidget({ data, status }: MapWidgetProps) {
           </span>
         </div>
         <div className="flex items-center gap-2">
-          {/* Radius badge */}
           <span
             className="text-xs font-bold px-2.5 py-1 rounded-full"
             style={{ background: `${colors.hex}15`, color: colors.hex }}
@@ -218,7 +211,6 @@ export default function MapWidget({ data, status }: MapWidgetProps) {
         className="relative transition-all duration-500"
         style={{ height: expanded ? '360px' : '220px' }}
       >
-        {/* Google Maps div */}
         <div ref={mapRef} className="w-full h-full" />
 
         {/* Fallback — tidak ada API key */}
@@ -243,7 +235,6 @@ export default function MapWidget({ data, status }: MapWidgetProps) {
                 ke .env.local
               </p>
             </div>
-            {/* Koordinat info */}
             <div
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl"
               style={{ background: 'white', border: '1px solid rgba(20,184,166,0.2)' }}
@@ -256,7 +247,7 @@ export default function MapWidget({ data, status }: MapWidgetProps) {
           </div>
         )}
 
-        {/* Loading state sebelum map ready */}
+        {/* Loading state */}
         {!mapReady && !mapError && (
           <div
             className="absolute inset-0 flex items-center justify-center"
@@ -264,7 +255,7 @@ export default function MapWidget({ data, status }: MapWidgetProps) {
           >
             <div className="flex flex-col items-center gap-2">
               <div
-                className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
+                className="w-8 h-8 rounded-full border-2 animate-spin"
                 style={{ borderColor: '#14b8a6', borderTopColor: 'transparent' }}
               />
               <p className="text-xs font-medium" style={{ color: '#6b9e96' }}>

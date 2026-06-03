@@ -39,11 +39,11 @@ export function useFloodData() {
   const prevKetinggianRef = useRef<number | null>(null);
   const offlineSetRef = useRef(false);
 
-  const addHistory = useCallback((ketinggian: number) => {
+  const addHistory = useCallback((ketinggian: number, status: SensorData['status_banjir']) => {
     const entry: HistoryEntry = {
       timestamp: Date.now(),
       ketinggian,
-      status: getFloodStatus(ketinggian),
+      status,
     };
     setHistory(prev => {
       const updated = [...prev, entry].slice(-MAX_HISTORY);
@@ -58,7 +58,6 @@ export function useFloodData() {
     const statusRef = ref(database, 'sensor_banjir/status_alat');
     const sensorRef = ref(database, 'sensor_banjir');
 
-    // Set status_alat = offline saat page load/refresh
     if (!offlineSetRef.current) {
       offlineSetRef.current = true;
       set(statusRef, 'offline').catch(() => {});
@@ -71,7 +70,11 @@ export function useFloodData() {
         const val = snapshot.val() as SensorData | null;
         if (val) {
           const ketinggian = Number(val.ketinggian_air) || 0;
-          const status = val.status_banjir || getFloodStatus(ketinggian);
+
+          // Prioritas utama: status_banjir dari Firebase
+          // Fallback: hitung otomatis dari ketinggian jika field tidak ada
+          const status = val.status_banjir ?? getFloodStatus(ketinggian);
+
           const enriched: SensorData = { ...val, status_banjir: status };
           setData(enriched);
           setLastUpdated(new Date());
@@ -81,7 +84,7 @@ export function useFloodData() {
             prevKetinggianRef.current === null ||
             Math.abs(ketinggian - prevKetinggianRef.current) >= 0.5
           ) {
-            addHistory(ketinggian);
+            addHistory(ketinggian, status);
             prevKetinggianRef.current = ketinggian;
           }
         } else {

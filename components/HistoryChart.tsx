@@ -21,7 +21,7 @@ export default function HistoryChart({ history, onClear, thresholds = DEFAULT_TH
     if (history.length < 2) return null;
 
     const values = history.map(h => h.ketinggian);
-    const maxVal = Math.max(...values, thresholds.SIAGA + 10);
+    const maxVal = Math.max(...values, thresholds.KRITIS + 10);
     const minVal = Math.max(0, Math.min(...values) - 5);
     const range = maxVal - minVal || 1;
 
@@ -40,6 +40,7 @@ export default function HistoryChart({ history, onClear, thresholds = DEFAULT_TH
       { val: thresholds.AMAN,   label: 'Aman',   color: '#10b981' },
       { val: thresholds.SIAGA,  label: 'Siaga',  color: '#f59e0b' },
       { val: thresholds.BAHAYA, label: 'Bahaya', color: '#f97316' },
+      { val: thresholds.KRITIS, label: 'Kritis', color: '#ef4444' },
     ].map(t => ({
       ...t,
       y: t.val >= minVal && t.val <= maxVal

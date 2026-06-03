@@ -91,7 +91,7 @@ export default function FloodDashboard() {
         {data && <StatusCards data={data} lastUpdated={lastUpdated} />}
         {data && <MapWidget data={data} status={status} />}
 
-        <HistoryChart history={history} onClear={clearHistory} />
+        <HistoryChart history={history} onClear={clearHistory} thresholds={thresholds} />
 
         {data && <Notifications currentStatus={status} ketinggian={data.ketinggian_air} thresholds={thresholds} />}
       </main>

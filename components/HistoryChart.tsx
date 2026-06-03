@@ -1,15 +1,16 @@
 'use client';
 
 import { useMemo } from 'react';
-import { HistoryEntry, getStatusColor, THRESHOLDS } from '@/lib/types';
+import { HistoryEntry, ThresholdData, DEFAULT_THRESHOLDS, getStatusColor } from '@/lib/types';
 import { Trash2 } from 'lucide-react';
 
 interface HistoryChartProps {
   history: HistoryEntry[];
   onClear: () => void;
+  thresholds?: ThresholdData;
 }
 
-export default function HistoryChart({ history, onClear }: HistoryChartProps) {
+export default function HistoryChart({ history, onClear, thresholds = DEFAULT_THRESHOLDS }: HistoryChartProps) {
   const W = 560;
   const H = 140;
   const PAD = { top: 16, right: 16, bottom: 28, left: 40 };
@@ -20,7 +21,7 @@ export default function HistoryChart({ history, onClear }: HistoryChartProps) {
     if (history.length < 2) return null;
 
     const values = history.map(h => h.ketinggian);
-    const maxVal = Math.max(...values, THRESHOLDS.SIAGA + 10);
+    const maxVal = Math.max(...values, thresholds.SIAGA + 10);
     const minVal = Math.max(0, Math.min(...values) - 5);
     const range = maxVal - minVal || 1;
 
@@ -32,15 +33,13 @@ export default function HistoryChart({ history, onClear }: HistoryChartProps) {
       status: h.status,
     }));
 
-    // SVG path
     const line = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
     const area = `${line} L ${pts[pts.length - 1].x.toFixed(1)} ${(PAD.top + chartH).toFixed(1)} L ${PAD.left} ${(PAD.top + chartH).toFixed(1)} Z`;
 
-    // Threshold lines
-    const thresholds = [
-      { val: THRESHOLDS.AMAN, label: 'Aman', color: '#10b981' },
-      { val: THRESHOLDS.SIAGA, label: 'Siaga', color: '#f59e0b' },
-      { val: THRESHOLDS.BAHAYA, label: 'Bahaya', color: '#f97316' },
+    const thresholdLines = [
+      { val: thresholds.AMAN,   label: 'Aman',   color: '#10b981' },
+      { val: thresholds.SIAGA,  label: 'Siaga',  color: '#f59e0b' },
+      { val: thresholds.BAHAYA, label: 'Bahaya', color: '#f97316' },
     ].map(t => ({
       ...t,
       y: t.val >= minVal && t.val <= maxVal
@@ -48,7 +47,6 @@ export default function HistoryChart({ history, onClear }: HistoryChartProps) {
         : null,
     }));
 
-    // Time labels (first, middle, last)
     const timeLabels = [0, Math.floor(history.length / 2), history.length - 1].map(i => ({
       x: PAD.left + (i / (history.length - 1)) * chartW,
       label: new Date(history[i].timestamp).toLocaleTimeString('id-ID', {
@@ -57,8 +55,8 @@ export default function HistoryChart({ history, onClear }: HistoryChartProps) {
       }),
     }));
 
-    return { pts, line, area, thresholds, timeLabels, maxVal, minVal };
-  }, [history]);
+    return { pts, line, area, thresholdLines, timeLabels, maxVal, minVal };
+  }, [history, thresholds]);
 
   if (history.length === 0) {
     return (
@@ -137,7 +135,7 @@ export default function HistoryChart({ history, onClear }: HistoryChartProps) {
           ))}
 
           {/* Threshold lines */}
-          {data?.thresholds.map((th, i) =>
+          {data?.thresholdLines.map((th, i) =>
             th.y !== null ? (
               <g key={i}>
                 <line
@@ -164,9 +162,7 @@ export default function HistoryChart({ history, onClear }: HistoryChartProps) {
           )}
 
           {/* Area fill */}
-          {data && (
-            <path d={data.area} fill="url(#areaGrad)" />
-          )}
+          {data && <path d={data.area} fill="url(#areaGrad)" />}
 
           {/* Line */}
           {data && (
@@ -180,7 +176,7 @@ export default function HistoryChart({ history, onClear }: HistoryChartProps) {
             />
           )}
 
-          {/* Data points (last 8 only to avoid clutter) */}
+          {/* Data points (last 8 only) */}
           {data?.pts.slice(-8).map((p, i) => (
             <circle
               key={i}
@@ -196,14 +192,7 @@ export default function HistoryChart({ history, onClear }: HistoryChartProps) {
           {/* Latest point highlighted */}
           {lastPoint && (
             <>
-              <circle
-                cx={lastPoint.x}
-                cy={lastPoint.y}
-                r="5"
-                fill={lastColor}
-                stroke="white"
-                strokeWidth="2"
-              />
+              <circle cx={lastPoint.x} cy={lastPoint.y} r="5" fill={lastColor} stroke="white" strokeWidth="2" />
               <text
                 x={lastPoint.x}
                 y={lastPoint.y - 9}

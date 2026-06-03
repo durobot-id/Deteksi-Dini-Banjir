@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Bell, CloudRain, AlertTriangle, Waves, X, CheckCircle } from 'lucide-react';
-import { FloodStatus, getStatusColor, getStatusLabel, THRESHOLDS } from '@/lib/types';
+import { FloodStatus, ThresholdData, getStatusColor, getStatusLabel } from '@/lib/types';
 
 interface Notification {
   id: string;
@@ -17,6 +17,7 @@ interface Notification {
 interface NotificationsProps {
   currentStatus: FloodStatus;
   ketinggian: number;
+  thresholds: ThresholdData;
 }
 
 const NOTIF_KEY = 'flood_notifications';
@@ -43,7 +44,7 @@ function makeId() {
   return Math.random().toString(36).slice(2, 9);
 }
 
-export default function Notifications({ currentStatus, ketinggian }: NotificationsProps) {
+export default function Notifications({ currentStatus, ketinggian, thresholds }: NotificationsProps) {
   const [notifs, setNotifs] = useState<Notification[]>([]);
   const [prevStatus, setPrevStatus] = useState<FloodStatus | null>(null);
 
@@ -51,7 +52,6 @@ export default function Notifications({ currentStatus, ketinggian }: Notificatio
     setNotifs(loadNotifs());
   }, []);
 
-  // Auto-generate notifications on status change
   useEffect(() => {
     if (prevStatus === null) {
       setPrevStatus(currentStatus);
@@ -76,7 +76,7 @@ export default function Notifications({ currentStatus, ketinggian }: Notificatio
           id: makeId(),
           type: 'kenaikan',
           title: '🚨 SIAGA KRITIS — Evakuasi!',
-          message: `Ketinggian ${ketinggian.toFixed(1)} cm melampaui batas kritis (${THRESHOLDS.KRITIS} cm). Segera evakuasi!`,
+          message: `Ketinggian ${ketinggian.toFixed(1)} cm melampaui batas kritis (${thresholds.KRITIS} cm). Segera evakuasi!`,
           time: new Date(),
           status: 'kritis',
           read: false,
@@ -87,7 +87,7 @@ export default function Notifications({ currentStatus, ketinggian }: Notificatio
           id: makeId(),
           type: 'kenaikan',
           title: '⚠ Peringatan Bahaya Banjir',
-          message: `Ketinggian ${ketinggian.toFixed(1)} cm melebihi batas bahaya (${THRESHOLDS.BAHAYA} cm). Bersiap evakuasi.`,
+          message: `Ketinggian ${ketinggian.toFixed(1)} cm melebihi batas bahaya (${thresholds.BAHAYA} cm). Bersiap evakuasi.`,
           time: new Date(),
           status: 'bahaya',
           read: false,
@@ -111,7 +111,7 @@ export default function Notifications({ currentStatus, ketinggian }: Notificatio
     });
 
     setPrevStatus(currentStatus);
-  }, [currentStatus, ketinggian, prevStatus]);
+  }, [currentStatus, ketinggian, prevStatus, thresholds]);
 
   const markRead = (id: string) => {
     setNotifs(prev => {
@@ -151,7 +151,6 @@ export default function Notifications({ currentStatus, ketinggian }: Notificatio
 
   return (
     <div className="flex flex-col gap-3">
-      {/* Section header */}
       <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-2">
           <Bell size={14} style={{ color: '#6b9e96' }} />
@@ -170,9 +169,7 @@ export default function Notifications({ currentStatus, ketinggian }: Notificatio
       </div>
 
       {notifs.length === 0 ? (
-        <div
-          className="card p-5 text-center"
-        >
+        <div className="card p-5 text-center">
           <Bell size={24} className="mx-auto mb-2" style={{ color: '#b2cdc9' }} />
           <p className="text-sm font-medium" style={{ color: '#94b5af' }}>
             Belum ada notifikasi
@@ -195,7 +192,6 @@ export default function Notifications({ currentStatus, ketinggian }: Notificatio
                   opacity: n.read ? 0.65 : 1,
                 }}
               >
-                {/* Icon */}
                 <div
                   className="w-8 h-8 rounded-xl shrink-0 flex items-center justify-center mt-0.5"
                   style={{ background: `${colors.hex}15` }}
@@ -203,7 +199,6 @@ export default function Notifications({ currentStatus, ketinggian }: Notificatio
                   {getIcon(n.type, n.status)}
                 </div>
 
-                {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
                     <p className="text-sm font-bold leading-tight" style={{ color: '#0f2923' }}>

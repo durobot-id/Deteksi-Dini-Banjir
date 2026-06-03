@@ -93,7 +93,7 @@ export default function FloodDashboard() {
 
         <HistoryChart history={history} onClear={clearHistory} />
 
-        {data && <Notifications currentStatus={status} ketinggian={data.ketinggian_air} />}
+        {data && <Notifications currentStatus={status} ketinggian={data.ketinggian_air} thresholds={thresholds} />}
       </main>
 
       <InstallBanner />

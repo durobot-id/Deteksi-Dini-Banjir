@@ -1,36 +1,42 @@
 export type FloodStatus = 'aman' | 'siaga' | 'bahaya' | 'kritis';
 
 export interface SensorData {
-  ketinggian_air: number;       // cm dengan desimal, contoh: 127.5
-  wilayah: string;              // nama wilayah
+  ketinggian_air: number;
+  wilayah: string;
   koordinat?: {
     lat: number;
     lng: number;
   };
-  radius_dampak?: number;       // meter
+  radius_dampak?: number;
   status_alat: 'online' | 'offline' | 'maintenance';
-  waktu_kirim: number;          // Unix timestamp (ms)
-  status_banjir: FloodStatus;   // wajib diisi dari Firebase: "aman" | "siaga" | "bahaya" | "kritis"
+  waktu_kirim: number;
+}
+
+export interface ThresholdData {
+  AMAN: number;
+  SIAGA: number;
+  BAHAYA: number;
+  KRITIS: number;
 }
 
 // =============================================
 // STRUKTUR DATA FIREBASE REALTIME DATABASE
 // =============================================
 //
-// Root: /sensor_banjir
-//
 // {
 //   "sensor_banjir": {
 //     "ketinggian_air": 127.5,
 //     "wilayah": "Ciliwung Hilir, Jakarta",
-//     "koordinat": {
-//       "lat": -6.2088,
-//       "lng": 106.8456
-//     },
+//     "koordinat": { "lat": -6.2088, "lng": 106.8456 },
 //     "radius_dampak": 2000,
 //     "status_alat": "online",
-//     "waktu_kirim": 1717300000000,
-//     "status_banjir": "siaga"    <-- wajib diisi oleh sensor/ESP32
+//     "waktu_kirim": 1717300000000
+//   },
+//   "threshold": {
+//     "AMAN": 80,
+//     "SIAGA": 100,
+//     "BAHAYA": 130,
+//     "KRITIS": 150
 //   }
 // }
 // =============================================
@@ -41,18 +47,18 @@ export interface HistoryEntry {
   status: FloodStatus;
 }
 
-export const THRESHOLDS = {
+// Nilai default jika threshold belum ada di Firebase
+export const DEFAULT_THRESHOLDS: ThresholdData = {
   AMAN: 80,
   SIAGA: 100,
   BAHAYA: 130,
   KRITIS: 150,
 };
 
-// Fallback jika status_banjir tidak ada di Firebase
-export function getFloodStatus(cm: number): FloodStatus {
-  if (cm >= THRESHOLDS.KRITIS) return 'kritis';
-  if (cm >= THRESHOLDS.BAHAYA) return 'bahaya';
-  if (cm >= THRESHOLDS.SIAGA) return 'siaga';
+export function getFloodStatus(cm: number, thresholds: ThresholdData): FloodStatus {
+  if (cm >= thresholds.KRITIS) return 'kritis';
+  if (cm >= thresholds.BAHAYA) return 'bahaya';
+  if (cm >= thresholds.SIAGA) return 'siaga';
   return 'aman';
 }
 

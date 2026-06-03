@@ -11,11 +11,13 @@ import Notifications from '@/components/Notifications';
 import AlertBanner from '@/components/AlertBanner';
 import InstallBanner from '@/components/InstallBanner';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
+import { getFloodStatus } from '@/lib/types';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 
 export default function FloodDashboard() {
   const {
     data,
+    thresholds,
     history,
     loading,
     error,
@@ -28,8 +30,8 @@ export default function FloodDashboard() {
   const prevKetinggian = prevKetinggianRef.current;
   if (data) prevKetinggianRef.current = data.ketinggian_air;
 
-  // Status langsung dari Firebase, bukan dihitung lokal
-  const status = data?.status_banjir ?? 'aman';
+  // Status dihitung dari ketinggian_air + threshold dari Firebase
+  const status = data ? getFloodStatus(data.ketinggian_air, thresholds) : 'aman';
 
   if (loading) return <LoadingSkeleton />;
 

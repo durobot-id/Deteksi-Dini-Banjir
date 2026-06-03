@@ -5,9 +5,10 @@ import { ref, onValue, off, set } from 'firebase/database';
 import { database } from '@/lib/firebase';
 import {
   SensorData,
+  ThresholdData,
   HistoryEntry,
   getFloodStatus,
-  THRESHOLDS,
+  DEFAULT_THRESHOLDS,
 } from '@/lib/types';
 
 const HISTORY_KEY = 'flood_alert_history';
@@ -32,6 +33,7 @@ function saveHistory(entries: HistoryEntry[]) {
 
 export function useFloodData() {
   const [data, setData] = useState<SensorData | null>(null);
+  const [thresholds, setThresholds] = useState<ThresholdData>(DEFAULT_THRESHOLDS);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +41,7 @@ export function useFloodData() {
   const prevKetinggianRef = useRef<number | null>(null);
   const offlineSetRef = useRef(false);
 
-  const addHistory = useCallback((ketinggian: number, status: SensorData['status_banjir']) => {
+  const addHistory = useCallback((ketinggian: number, status: HistoryEntry['status']) => {
     const entry: HistoryEntry = {
       timestamp: Date.now(),
       ketinggian,
@@ -57,28 +59,42 @@ export function useFloodData() {
 
     const statusRef = ref(database, 'sensor_banjir/status_alat');
     const sensorRef = ref(database, 'sensor_banjir');
+    const thresholdRef = ref(database, 'threshold');
 
+    // Set status_alat = offline saat page load/refresh
     if (!offlineSetRef.current) {
       offlineSetRef.current = true;
       set(statusRef, 'offline').catch(() => {});
     }
 
-    const unsubscribe = onValue(
+    // Listen threshold dari Firebase — update realtime jika diubah
+    const unsubscribeThreshold = onValue(thresholdRef, (snapshot) => {
+      const val = snapshot.val() as ThresholdData | null;
+      if (val) {
+        // Pastikan semua field ada, fallback ke default jika tidak
+        setThresholds({
+          AMAN:   val.AMAN   ?? DEFAULT_THRESHOLDS.AMAN,
+          SIAGA:  val.SIAGA  ?? DEFAULT_THRESHOLDS.SIAGA,
+          BAHAYA: val.BAHAYA ?? DEFAULT_THRESHOLDS.BAHAYA,
+          KRITIS: val.KRITIS ?? DEFAULT_THRESHOLDS.KRITIS,
+        });
+      }
+    });
+
+    // Listen data sensor
+    const unsubscribeSensor = onValue(
       sensorRef,
       (snapshot) => {
         setLoading(false);
         const val = snapshot.val() as SensorData | null;
         if (val) {
-          const ketinggian = Number(val.ketinggian_air) || 0;
-
-          // Prioritas utama: status_banjir dari Firebase
-          // Fallback: hitung otomatis dari ketinggian jika field tidak ada
-          const status = val.status_banjir ?? getFloodStatus(ketinggian);
-
-          const enriched: SensorData = { ...val, status_banjir: status };
-          setData(enriched);
+          setData(val);
           setLastUpdated(new Date());
           setError(null);
+
+          // Hitung status dari threshold yang aktif
+          const ketinggian = Number(val.ketinggian_air) || 0;
+          const status = getFloodStatus(ketinggian, thresholds);
 
           if (
             prevKetinggianRef.current === null ||
@@ -97,8 +113,11 @@ export function useFloodData() {
       }
     );
 
-    return () => off(sensorRef, 'value', unsubscribe);
-  }, [addHistory]);
+    return () => {
+      off(sensorRef, 'value', unsubscribeSensor);
+      off(thresholdRef, 'value', unsubscribeThreshold);
+    };
+  }, [addHistory, thresholds]);
 
   const clearHistory = useCallback(() => {
     setHistory([]);
@@ -109,19 +128,15 @@ export function useFloodData() {
   const isDataStale =
     lastUpdated ? Date.now() - lastUpdated.getTime() > 5 * 60 * 1000 : false;
 
-  const persen = data
-    ? Math.min((data.ketinggian_air / THRESHOLDS.KRITIS) * 100, 100)
-    : 0;
-
   return {
     data,
+    thresholds,
     history,
     loading,
     error,
     lastUpdated,
     isDeviceOnline,
     isDataStale,
-    persen,
     clearHistory,
   };
 }

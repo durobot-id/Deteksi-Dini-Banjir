@@ -2,7 +2,7 @@ export type FloodStatus = 'aman' | 'siaga' | 'bahaya' | 'kritis';
 
 export interface SensorData {
   ketinggian_air: number;       // cm dengan desimal, contoh: 127.5
-  wilayah: string;              // nama wilayah, contoh: "Ciliwung Hilir, Jakarta"
+  wilayah: string;              // nama wilayah
   koordinat?: {
     lat: number;
     lng: number;
@@ -10,7 +10,7 @@ export interface SensorData {
   radius_dampak?: number;       // meter
   status_alat: 'online' | 'offline' | 'maintenance';
   waktu_kirim: number;          // Unix timestamp (ms)
-  status_banjir?: FloodStatus;  // opsional, bisa dihitung dari ketinggian_air
+  status_banjir: FloodStatus;   // wajib diisi dari Firebase: "aman" | "siaga" | "bahaya" | "kritis"
 }
 
 // =============================================
@@ -30,23 +30,9 @@ export interface SensorData {
 //     "radius_dampak": 2000,
 //     "status_alat": "online",
 //     "waktu_kirim": 1717300000000,
-//     "status_banjir": "siaga"
+//     "status_banjir": "siaga"    <-- wajib diisi oleh sensor/ESP32
 //   }
 // }
-//
-// Rules Firebase (firebase-rules.json):
-// {
-//   "rules": {
-//     "sensor_banjir": {
-//       ".read": true,
-//       ".write": true
-//     }
-//   }
-// }
-//
-// Untuk ESP32/Arduino, kirim data ke path:
-//   PUT https://<DATABASE_URL>/sensor_banjir.json
-// dengan body JSON seperti di atas.
 // =============================================
 
 export interface HistoryEntry {
@@ -56,12 +42,13 @@ export interface HistoryEntry {
 }
 
 export const THRESHOLDS = {
-  AMAN: 80,       // cm
-  SIAGA: 100,     // cm
-  BAHAYA: 130,    // cm
-  KRITIS: 150,    // cm
+  AMAN: 80,
+  SIAGA: 100,
+  BAHAYA: 130,
+  KRITIS: 150,
 };
 
+// Fallback jika status_banjir tidak ada di Firebase
 export function getFloodStatus(cm: number): FloodStatus {
   if (cm >= THRESHOLDS.KRITIS) return 'kritis';
   if (cm >= THRESHOLDS.BAHAYA) return 'bahaya';
@@ -81,10 +68,10 @@ export function getStatusLabel(status: FloodStatus): string {
 
 export function getStatusColor(status: FloodStatus) {
   const colors: Record<FloodStatus, { bg: string; text: string; border: string; hex: string }> = {
-    aman: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', hex: '#10b981' },
-    siaga: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', hex: '#f59e0b' },
-    bahaya: { bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200', hex: '#f97316' },
-    kritis: { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', hex: '#ef4444' },
+    aman:   { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', hex: '#10b981' },
+    siaga:  { bg: 'bg-amber-50',   text: 'text-amber-700',   border: 'border-amber-200',   hex: '#f59e0b' },
+    bahaya: { bg: 'bg-orange-50',  text: 'text-orange-700',  border: 'border-orange-200',  hex: '#f97316' },
+    kritis: { bg: 'bg-red-50',     text: 'text-red-700',     border: 'border-red-200',     hex: '#ef4444' },
   };
   return colors[status];
 }

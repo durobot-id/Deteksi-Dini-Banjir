@@ -23,7 +23,7 @@ export default function HistoryChart({ history, onClear, thresholds = DEFAULT_TH
     const values = history.map(h => h.ketinggian);
     const maxVal = Math.max(...values, thresholds.KRITIS + 10);
     const minVal = Math.max(0, Math.min(...values) - 5);
-    const range = maxVal - minVal || 1;
+    const range  = maxVal - minVal || 1;
 
     const pts = history.map((h, i) => ({
       x: PAD.left + (i / (history.length - 1)) * chartW,
@@ -51,8 +51,7 @@ export default function HistoryChart({ history, onClear, thresholds = DEFAULT_TH
     const timeLabels = [0, Math.floor(history.length / 2), history.length - 1].map(i => ({
       x: PAD.left + (i / (history.length - 1)) * chartW,
       label: new Date(history[i].timestamp).toLocaleTimeString('id-ID', {
-        hour: '2-digit',
-        minute: '2-digit',
+        hour: '2-digit', minute: '2-digit',
       }),
     }));
 
@@ -65,16 +64,9 @@ export default function HistoryChart({ history, onClear, thresholds = DEFAULT_TH
         <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#6b9e96' }}>
           Riwayat Ketinggian
         </p>
-        <div
-          className="flex flex-col items-center justify-center py-8 rounded-xl"
-          style={{ background: '#f0fdfa' }}
-        >
-          <p className="text-sm font-medium" style={{ color: '#94b5af' }}>
-            Belum ada data riwayat
-          </p>
-          <p className="text-xs mt-1" style={{ color: '#b2cdc9' }}>
-            Data akan terekam secara otomatis di browser
-          </p>
+        <div className="flex flex-col items-center justify-center py-8 rounded-xl" style={{ background: '#f0fdfa' }}>
+          <p className="text-sm font-medium" style={{ color: '#94b5af' }}>Belum ada data riwayat</p>
+          <p className="text-xs mt-1" style={{ color: '#b2cdc9' }}>Data akan terekam secara otomatis di browser</p>
         </div>
       </div>
     );
@@ -82,7 +74,7 @@ export default function HistoryChart({ history, onClear, thresholds = DEFAULT_TH
 
   const lastPoint = data?.pts[data.pts.length - 1];
   const lastStatus = history[history.length - 1]?.status;
-  const lastColor = lastStatus ? getStatusColor(lastStatus).hex : '#14b8a6';
+  const lastColor  = lastStatus ? getStatusColor(lastStatus).hex : '#14b8a6';
 
   return (
     <div className="card p-5">
@@ -98,11 +90,7 @@ export default function HistoryChart({ history, onClear, thresholds = DEFAULT_TH
         <button
           onClick={onClear}
           className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg transition-all hover:scale-95"
-          style={{
-            background: 'rgba(239,68,68,0.08)',
-            color: '#ef4444',
-            border: '1px solid rgba(239,68,68,0.15)',
-          }}
+          style={{ background: 'rgba(239,68,68,0.08)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.15)' }}
         >
           <Trash2 size={11} />
           Hapus
@@ -110,11 +98,7 @@ export default function HistoryChart({ history, onClear, thresholds = DEFAULT_TH
       </div>
 
       <div className="w-full overflow-x-auto">
-        <svg
-          viewBox={`0 0 ${W} ${H}`}
-          className="w-full"
-          style={{ minWidth: '280px', height: 'auto', maxHeight: '160px' }}
-        >
+        <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ minWidth: '280px', height: 'auto', maxHeight: '160px' }}>
           <defs>
             <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={lastColor} stopOpacity="0.2" />
@@ -122,93 +106,45 @@ export default function HistoryChart({ history, onClear, thresholds = DEFAULT_TH
             </linearGradient>
           </defs>
 
-          {/* Grid lines */}
           {[0, 0.25, 0.5, 0.75, 1].map((t, i) => (
-            <line
-              key={i}
-              x1={PAD.left}
-              x2={PAD.left + chartW}
-              y1={PAD.top + t * chartH}
-              y2={PAD.top + t * chartH}
-              stroke="rgba(20,184,166,0.08)"
-              strokeWidth="1"
-            />
+            <line key={i} x1={PAD.left} x2={PAD.left + chartW}
+              y1={PAD.top + t * chartH} y2={PAD.top + t * chartH}
+              stroke="rgba(20,184,166,0.08)" strokeWidth="1" />
           ))}
 
-          {/* Threshold lines */}
           {data?.thresholdLines.map((th, i) =>
             th.y !== null ? (
               <g key={i}>
-                <line
-                  x1={PAD.left}
-                  x2={PAD.left + chartW}
-                  y1={th.y}
-                  y2={th.y}
-                  stroke={th.color}
-                  strokeWidth="1"
-                  strokeDasharray="4,3"
-                  opacity="0.5"
-                />
-                <text
-                  x={PAD.left + chartW + 2}
-                  y={th.y + 4}
-                  fill={th.color}
-                  fontSize="8"
-                  opacity="0.7"
-                >
+                <line x1={PAD.left} x2={PAD.left + chartW} y1={th.y} y2={th.y}
+                  stroke={th.color} strokeWidth="1" strokeDasharray="4,3" opacity="0.5" />
+                <text x={PAD.left + chartW + 2} y={th.y + 4} fill={th.color} fontSize="8" opacity="0.7">
                   {th.label}
                 </text>
               </g>
             ) : null
           )}
 
-          {/* Area fill */}
           {data && <path d={data.area} fill="url(#areaGrad)" />}
-
-          {/* Line */}
           {data && (
-            <path
-              d={data.line}
-              fill="none"
-              stroke={lastColor}
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
+            <path d={data.line} fill="none" stroke={lastColor}
+              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           )}
 
-          {/* Data points (last 8 only) */}
           {data?.pts.slice(-8).map((p, i) => (
-            <circle
-              key={i}
-              cx={p.x}
-              cy={p.y}
-              r="2.5"
-              fill={getStatusColor(p.status).hex}
-              stroke="white"
-              strokeWidth="1"
-            />
+            <circle key={i} cx={p.x} cy={p.y} r="2.5"
+              fill={getStatusColor(p.status).hex} stroke="white" strokeWidth="1" />
           ))}
 
-          {/* Latest point highlighted */}
           {lastPoint && (
             <>
               <circle cx={lastPoint.x} cy={lastPoint.y} r="5" fill={lastColor} stroke="white" strokeWidth="2" />
-              <text
-                x={lastPoint.x}
-                y={lastPoint.y - 9}
-                textAnchor="middle"
-                fill={lastColor}
-                fontSize="9"
-                fontWeight="600"
-                fontFamily="var(--font-mono)"
-              >
+              <text x={lastPoint.x} y={lastPoint.y - 9} textAnchor="middle"
+                fill={lastColor} fontSize="9" fontWeight="600" fontFamily="var(--font-mono)">
                 {lastPoint.val.toFixed(1)}
               </text>
             </>
           )}
 
-          {/* Y axis labels */}
           {data && (
             <>
               <text x={PAD.left - 4} y={PAD.top + 4} textAnchor="end" fill="#94b5af" fontSize="8" fontFamily="var(--font-mono)">
@@ -220,17 +156,9 @@ export default function HistoryChart({ history, onClear, thresholds = DEFAULT_TH
             </>
           )}
 
-          {/* Time labels */}
           {data?.timeLabels.map((tl, i) => (
-            <text
-              key={i}
-              x={tl.x}
-              y={H - 4}
-              textAnchor="middle"
-              fill="#94b5af"
-              fontSize="8"
-              fontFamily="var(--font-mono)"
-            >
+            <text key={i} x={tl.x} y={H - 4} textAnchor="middle"
+              fill="#94b5af" fontSize="8" fontFamily="var(--font-mono)">
               {tl.label}
             </text>
           ))}

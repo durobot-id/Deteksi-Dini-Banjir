@@ -19,6 +19,11 @@ export interface ThresholdData {
   KRITIS: number;
 }
 
+export interface CuacaConfig {
+  adm4: string;           // kode kecamatan BMKG, contoh: "31.72.01.1001"
+  nama_wilayah: string;   // nama tampilan, contoh: "Gambir, Jakarta Pusat"
+}
+
 // =============================================
 // STRUKTUR DATA FIREBASE REALTIME DATABASE
 // =============================================
@@ -41,13 +46,13 @@ export interface ThresholdData {
 // }
 // =============================================
 
+
 export interface HistoryEntry {
   timestamp: number;
   ketinggian: number;
   status: FloodStatus;
 }
 
-// Nilai default jika threshold belum ada di Firebase
 export const DEFAULT_THRESHOLDS: ThresholdData = {
   AMAN: 80,
   SIAGA: 100,
@@ -55,19 +60,16 @@ export const DEFAULT_THRESHOLDS: ThresholdData = {
   KRITIS: 150,
 };
 
-export function getFloodStatus(cm: number, thresholds: ThresholdData): FloodStatus {
+export function getFloodStatus(cm: number, thresholds: ThresholdData = DEFAULT_THRESHOLDS): FloodStatus {
   if (cm >= thresholds.KRITIS) return 'kritis';
   if (cm >= thresholds.BAHAYA) return 'bahaya';
-  if (cm >= thresholds.SIAGA) return 'siaga';
+  if (cm >= thresholds.SIAGA)  return 'siaga';
   return 'aman';
 }
 
 export function getStatusLabel(status: FloodStatus): string {
   const labels: Record<FloodStatus, string> = {
-    aman: 'Aman',
-    siaga: 'Siaga',
-    bahaya: 'Bahaya',
-    kritis: 'Kritis',
+    aman: 'Aman', siaga: 'Siaga', bahaya: 'Bahaya', kritis: 'Kritis',
   };
   return labels[status];
 }

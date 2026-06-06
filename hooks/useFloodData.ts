@@ -6,6 +6,7 @@ import { database } from '@/lib/firebase';
 import {
   SensorData,
   ThresholdData,
+  CuacaConfig,
   HistoryEntry,
   getFloodStatus,
   DEFAULT_THRESHOLDS,
@@ -19,9 +20,7 @@ function loadHistory(): HistoryEntry[] {
   try {
     const raw = localStorage.getItem(HISTORY_KEY);
     return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
+  } catch { return []; }
 }
 
 function saveHistory(entries: HistoryEntry[]) {
@@ -32,21 +31,19 @@ function saveHistory(entries: HistoryEntry[]) {
 }
 
 export function useFloodData() {
-  const [data, setData] = useState<SensorData | null>(null);
+  const [data, setData]           = useState<SensorData | null>(null);
   const [thresholds, setThresholds] = useState<ThresholdData>(DEFAULT_THRESHOLDS);
-  const [history, setHistory] = useState<HistoryEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [cuacaConfig, setCuacaConfig] = useState<CuacaConfig | null>(null);
+  const [history, setHistory]     = useState<HistoryEntry[]>([]);
+  const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const prevKetinggianRef = useRef<number | null>(null);
-  const offlineSetRef = useRef(false);
+  const offlineSetRef     = useRef(false);
+  const thresholdsRef     = useRef<ThresholdData>(DEFAULT_THRESHOLDS);
 
   const addHistory = useCallback((ketinggian: number, status: HistoryEntry['status']) => {
-    const entry: HistoryEntry = {
-      timestamp: Date.now(),
-      ketinggian,
-      status,
-    };
+    const entry: HistoryEntry = { timestamp: Date.now(), ketinggian, status };
     setHistory(prev => {
       const updated = [...prev, entry].slice(-MAX_HISTORY);
       saveHistory(updated);
@@ -57,31 +54,38 @@ export function useFloodData() {
   useEffect(() => {
     setHistory(loadHistory());
 
-    const statusRef = ref(database, 'sensor_banjir/status_alat');
-    const sensorRef = ref(database, 'sensor_banjir');
+    const statusRef    = ref(database, 'sensor_banjir/status_alat');
+    const sensorRef    = ref(database, 'sensor_banjir');
     const thresholdRef = ref(database, 'threshold');
+    const cuacaRef     = ref(database, 'cuaca_config');
 
-    // Set status_alat = offline saat page load/refresh
     if (!offlineSetRef.current) {
       offlineSetRef.current = true;
       set(statusRef, 'offline').catch(() => {});
     }
 
-    // Listen threshold dari Firebase — update realtime jika diubah
+    // Listen threshold
     const unsubscribeThreshold = onValue(thresholdRef, (snapshot) => {
       const val = snapshot.val() as ThresholdData | null;
       if (val) {
-        // Pastikan semua field ada, fallback ke default jika tidak
-        setThresholds({
+        const t: ThresholdData = {
           AMAN:   val.AMAN   ?? DEFAULT_THRESHOLDS.AMAN,
           SIAGA:  val.SIAGA  ?? DEFAULT_THRESHOLDS.SIAGA,
           BAHAYA: val.BAHAYA ?? DEFAULT_THRESHOLDS.BAHAYA,
           KRITIS: val.KRITIS ?? DEFAULT_THRESHOLDS.KRITIS,
-        });
+        };
+        thresholdsRef.current = t;
+        setThresholds(t);
       }
     });
 
-    // Listen data sensor
+    // Listen cuaca_config
+    const unsubscribeCuaca = onValue(cuacaRef, (snapshot) => {
+      const val = snapshot.val() as CuacaConfig | null;
+      if (val?.adm4) setCuacaConfig(val);
+    });
+
+    // Listen sensor
     const unsubscribeSensor = onValue(
       sensorRef,
       (snapshot) => {
@@ -91,11 +95,8 @@ export function useFloodData() {
           setData(val);
           setLastUpdated(new Date());
           setError(null);
-
-          // Hitung status dari threshold yang aktif
           const ketinggian = Number(val.ketinggian_air) || 0;
-          const status = getFloodStatus(ketinggian, thresholds);
-
+          const status = getFloodStatus(ketinggian, thresholdsRef.current);
           if (
             prevKetinggianRef.current === null ||
             Math.abs(ketinggian - prevKetinggianRef.current) >= 0.5
@@ -114,10 +115,11 @@ export function useFloodData() {
     );
 
     return () => {
-      off(sensorRef, 'value', unsubscribeSensor);
+      off(sensorRef,    'value', unsubscribeSensor);
       off(thresholdRef, 'value', unsubscribeThreshold);
+      off(cuacaRef,     'value', unsubscribeCuaca);
     };
-  }, [addHistory, thresholds]);
+  }, [addHistory]);
 
   const clearHistory = useCallback(() => {
     setHistory([]);
@@ -125,12 +127,14 @@ export function useFloodData() {
   }, []);
 
   const isDeviceOnline = data?.status_alat === 'online';
-  const isDataStale =
-    lastUpdated ? Date.now() - lastUpdated.getTime() > 5 * 60 * 1000 : false;
+  const isDataStale    = lastUpdated
+    ? Date.now() - lastUpdated.getTime() > 5 * 60 * 1000
+    : false;
 
   return {
     data,
     thresholds,
+    cuacaConfig,
     history,
     loading,
     error,

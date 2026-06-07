@@ -22,6 +22,10 @@ export interface ThresholdData {
 export interface CuacaConfig {
   adm4: string;           // kode kecamatan BMKG, contoh: "31.72.01.1001"
   nama_wilayah: string;   // nama tampilan, contoh: "Gambir, Jakarta Pusat"
+  koordinat?: {
+    lat: number;
+    lng: number;
+  };
 }
 
 // =============================================

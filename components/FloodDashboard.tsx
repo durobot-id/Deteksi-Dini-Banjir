@@ -67,20 +67,20 @@ export default function FloodDashboard() {
     );
   }
 
+  // Koordinat: prioritas dari cuaca_config, fallback ke sensor_banjir
+  const koordinat = cuacaConfig?.koordinat ?? data?.koordinat;
+
   return (
     <>
       <Header isOnline={isDeviceOnline} />
 
       <main className="max-w-4xl mx-auto px-4 py-4 pb-24 flex flex-col gap-4 animate-fadeInUp">
-        {/* Banner izin notifikasi */}
         <NotificationPermission />
 
-        {/* Alert darurat */}
         {data && (status === 'bahaya' || status === 'kritis') && (
           <AlertBanner status={status} ketinggian={data.ketinggian_air} />
         )}
 
-        {/* Gauge ketinggian air */}
         {data && (
           <WaterLevelGauge
             ketinggian={data.ketinggian_air}
@@ -89,23 +89,25 @@ export default function FloodDashboard() {
           />
         )}
 
-        {/* Status cards: wilayah, alat, waktu, radius */}
         {data && <StatusCards data={data} lastUpdated={lastUpdated} />}
 
-        {/* Peta radius dampak */}
-        {data && <MapWidget data={data} status={status} />}
+        {/* Peta — koordinat dari cuaca_config */}
+        {data && (
+          <MapWidget
+            data={{ ...data, koordinat }}
+            status={status}
+          />
+        )}
 
-        {/* Prakiraan cuaca BMKG + prediksi banjir */}
+        {/* Cuaca BMKG — adm4 dari cuaca_config */}
         <WeatherForecast
           adm4={cuacaConfig?.adm4}
           namaWilayah={cuacaConfig?.nama_wilayah}
           ketinggian={data?.ketinggian_air ?? 0}
         />
 
-        {/* Riwayat ketinggian */}
         <HistoryChart history={history} onClear={clearHistory} thresholds={thresholds} />
 
-        {/* Notifikasi + alarm */}
         {data && (
           <Notifications
             currentStatus={status}

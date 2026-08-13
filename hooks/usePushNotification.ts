@@ -80,20 +80,29 @@ export function usePushNotification() {
     try {
       const reg = await navigator.serviceWorker.ready;
 
-      // Subscribe push (VAPID) jika key tersedia
       if (VAPID_KEY) {
         const sub = await reg.pushManager.subscribe({
           userVisibleOnly:      true,
           applicationServerKey: urlBase64ToUint8Array(VAPID_KEY),
         });
         setSubscription(sub);
-        console.log('[Push] Subscribed:', JSON.stringify(sub));
+
+        // ── Simpan subscription ke Firebase RTDB ──────────────────────────
+        // push-server.js akan membaca ini untuk mengirim notif background
+        const subJson   = sub.toJSON();
+        const subId     = btoa(sub.endpoint).slice(-20).replace(/[^a-zA-Z0-9]/g, '_');
+        const FIREBASE  = process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL?.replace(/\/$/, '');
+        if (FIREBASE) {
+          await fetch(`${FIREBASE}/push_subscriptions/${subId}.json`, {
+            method:  'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify(subJson),
+          });
+          console.log('[Push] Subscription disimpan ke Firebase:', subId);
+        }
       }
 
-      // Daftar periodic background sync
       await registerPeriodicSync(reg);
-
-      // Minta SW mulai polling background
       reg.active?.postMessage({ type: 'START_POLLING' });
     } catch (err) {
       console.warn('[Push] Setup failed:', err);

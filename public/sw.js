@@ -6,7 +6,7 @@
 const CACHE_NAME      = 'floodguard-v3';
 const STATIC_ASSETS   = ['/', '/manifest.json', '/icons/icon-192.png', '/icons/icon-512.png'];
 const FIREBASE_DB_URL = 'https://deteksi-dini-banjir-349c3-default-rtdb.asia-southeast1.firebasedatabase.app';
-const POLL_INTERVAL   = 30_000; // 30 detik
+const POLL_INTERVAL   = 1_000; // 1 detik
 
 // State di-memory SW
 let lastKnownStatus    = null;

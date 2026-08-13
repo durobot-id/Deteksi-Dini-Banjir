@@ -31,15 +31,18 @@ function saveHistory(entries: HistoryEntry[]) {
 }
 
 export function useFloodData() {
-  const [data, setData]           = useState<SensorData | null>(null);
-  const [thresholds, setThresholds] = useState<ThresholdData>(DEFAULT_THRESHOLDS);
+  const [data, setData]               = useState<SensorData | null>(null);
+  // thresholds dimulai null — menunggu Firebase, baru tampil setelah dapat data
+  const [thresholds, setThresholds]   = useState<ThresholdData | null>(null);
   const [cuacaConfig, setCuacaConfig] = useState<CuacaConfig | null>(null);
-  const [history, setHistory]     = useState<HistoryEntry[]>([]);
-  const [loading, setLoading]     = useState(true);
-  const [error, setError]         = useState<string | null>(null);
+  const [history, setHistory]         = useState<HistoryEntry[]>([]);
+  const [loading, setLoading]         = useState(true);
+  const [error, setError]             = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
   const prevKetinggianRef = useRef<number | null>(null);
   const offlineSetRef     = useRef(false);
+  // ref internal tetap pakai DEFAULT sebagai safe-fallback kalkulasi history
   const thresholdsRef     = useRef<ThresholdData>(DEFAULT_THRESHOLDS);
 
   const addHistory = useCallback((ketinggian: number, status: HistoryEntry['status']) => {
@@ -64,7 +67,7 @@ export function useFloodData() {
       set(statusRef, 'offline').catch(() => {});
     }
 
-    // Listen threshold
+    // Listen threshold dari Firebase
     const unsubscribeThreshold = onValue(thresholdRef, (snapshot) => {
       const val = snapshot.val() as ThresholdData | null;
       if (val) {
@@ -77,15 +80,16 @@ export function useFloodData() {
         thresholdsRef.current = t;
         setThresholds(t);
       }
+      // Jika tidak ada threshold di Firebase, tetap null → UI tidak tampil
     });
 
-    // Listen cuaca_config
+    // Listen cuaca_config dari Firebase
     const unsubscribeCuaca = onValue(cuacaRef, (snapshot) => {
       const val = snapshot.val() as CuacaConfig | null;
       if (val?.adm4) setCuacaConfig(val);
     });
 
-    // Listen sensor
+    // Listen data sensor dari Firebase
     const unsubscribeSensor = onValue(
       sensorRef,
       (snapshot) => {
@@ -127,20 +131,16 @@ export function useFloodData() {
   }, []);
 
   const isDeviceOnline = data?.status_alat === 'online';
-  const isDataStale    = lastUpdated
-    ? Date.now() - lastUpdated.getTime() > 5 * 60 * 1000
-    : false;
 
   return {
     data,
-    thresholds,
+    thresholds,         // null sampai Firebase memberi data
     cuacaConfig,
     history,
     loading,
     error,
     lastUpdated,
     isDeviceOnline,
-    isDataStale,
     clearHistory,
   };
 }

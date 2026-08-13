@@ -8,7 +8,6 @@ export type PermissionState = 'default' | 'granted' | 'denied' | 'unsupported';
 
 const VAPID_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '';
 
-// Konversi VAPID key ke Uint8Array
 function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
@@ -18,6 +17,30 @@ function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
     outputArray[i] = rawData.charCodeAt(i);
   }
   return outputArray.buffer;
+}
+
+// Status → judul & body notif yang ringkas dan jelas
+function buildNotifContent(
+  title: string,
+  body: string,
+  status: FloodStatus,
+  ketinggian: number,
+): { title: string; body: string } {
+  const label = getStatusLabel(status).toUpperCase();
+  return {
+    title: `[${label}] ${title}`,
+    body: `${body}\nKetinggian: ${ketinggian.toFixed(1)} cm`,
+  };
+}
+
+// Vibration pattern per status
+function getVibration(status: FloodStatus): number[] {
+  switch (status) {
+    case 'kritis': return [600, 200, 600, 200, 600, 200, 600];
+    case 'bahaya': return [400, 150, 400, 150, 400];
+    case 'siaga':  return [200, 100, 200];
+    default:       return [150];
+  }
 }
 
 export function usePushNotification() {
@@ -32,7 +55,6 @@ export function usePushNotification() {
     setPermission(Notification.permission as PermissionState);
   }, []);
 
-  // Minta izin notifikasi + subscribe push
   const requestPermission = useCallback(async () => {
     if (!('Notification' in window)) return false;
 
@@ -41,7 +63,7 @@ export function usePushNotification() {
 
     if (result !== 'granted') return false;
 
-    // Daftarkan service worker push subscription
+    // Subscribe ke push notifications
     try {
       const reg = await navigator.serviceWorker.ready;
       if (VAPID_KEY) {
@@ -50,7 +72,6 @@ export function usePushNotification() {
           applicationServerKey: urlBase64ToUint8Array(VAPID_KEY),
         });
         setSubscription(sub);
-        // Di sini bisa kirim sub ke backend/Firebase untuk push server-side
         console.log('[Push] Subscribed:', JSON.stringify(sub));
       }
     } catch (err) {
@@ -60,7 +81,10 @@ export function usePushNotification() {
     return true;
   }, []);
 
-  // Kirim notifikasi lokal via Service Worker (berfungsi saat app di background)
+  /**
+   * Kirim notifikasi lokal melalui Service Worker.
+   * Bekerja saat app di background / HP terkunci.
+   */
   const sendLocalNotification = useCallback(async (
     title: string,
     body: string,
@@ -69,46 +93,55 @@ export function usePushNotification() {
   ) => {
     if (Notification.permission !== 'granted') return;
 
-    const statusEmoji: Record<FloodStatus, string> = {
-      aman: '✅', siaga: '⚠️', bahaya: '🌊', kritis: '🚨',
-    };
-    const statusColor: Record<FloodStatus, string> = {
-      aman: '#10b981', siaga: '#f59e0b', bahaya: '#f97316', kritis: '#ef4444',
-    };
+    const { title: finalTitle, body: finalBody } = buildNotifContent(title, body, status, ketinggian);
+
+    const isUrgent   = status === 'kritis' || status === 'bahaya';
+    const isKritis   = status === 'kritis';
+    const vibration  = getVibration(status);
+
+    const options: NotificationOptions = {
+      body: finalBody,
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+      tag: `flood-alert-${status}`,
+      // renotify: true → notif muncul lagi meski tag sama (penting untuk update kritis)
+      renotify: isUrgent,
+      requireInteraction: isUrgent,
+      silent: false,
+      vibrate: vibration,
+      timestamp: Date.now(),
+      data: { status, ketinggian, url: '/' },
+      actions: isUrgent
+        ? [
+            { action: 'view', title: 'Lihat Dashboard' },
+            { action: 'dismiss', title: 'Tutup' },
+          ]
+        : [
+            { action: 'view', title: 'Lihat Dashboard' },
+          ],
+    } as NotificationOptions;
 
     try {
       const reg = await navigator.serviceWorker.ready;
-      await reg.showNotification(title, {
-        body,
-        icon: '/icons/icon-192.png',
-        badge: '/icons/icon-192.png',
-        tag: `flood-alert-${status}`,        // replace notif yang sama
-        renotify: status === 'kritis',        // re-alert jika kritis
-        requireInteraction: status === 'kritis' || status === 'bahaya',
-        silent: false,
-        vibrate: status === 'kritis'
-          ? [500, 200, 500, 200, 500]
-          : status === 'bahaya'
-          ? [300, 100, 300]
-          : [200],
-        data: { status, ketinggian, url: '/' },
-        actions: [
-          { action: 'view', title: '📊 Lihat Dashboard' },
-          { action: 'dismiss', title: 'Tutup' },
-        ],
-      } as NotificationOptions);
+      // Gunakan service worker showNotification agar notif tampil saat app background
+      await reg.showNotification(finalTitle, options);
 
       // Mainkan suara alarm bersamaan
       playNotificationSound(status);
-    } catch (err) {
-      // Fallback: notifikasi biasa jika SW belum ready
+    } catch {
+      // Fallback: Notification API langsung (saat SW belum siap)
       if (Notification.permission === 'granted') {
-        const n = new Notification(title, {
-          body,
+        const n = new Notification(finalTitle, {
+          body: finalBody,
           icon: '/icons/icon-192.png',
           tag: `flood-alert-${status}`,
+          requireInteraction: isUrgent,
+          silent: false,
         });
-        n.onclick = () => window.focus();
+        n.onclick = () => {
+          window.focus();
+          n.close();
+        };
         playNotificationSound(status);
       }
     }

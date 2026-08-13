@@ -15,11 +15,9 @@ export default function InstallBanner() {
   const [installed, setInstalled] = useState(false);
 
   useEffect(() => {
-    // Cek apakah sudah dismiss sebelumnya
     const wasDismissed = localStorage.getItem('pwa_install_dismissed');
     if (wasDismissed) { setDismissed(true); return; }
 
-    // Cek apakah sudah installed (standalone mode)
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setInstalled(true);
       return;
@@ -28,13 +26,11 @@ export default function InstallBanner() {
     const handler = (e: Event) => {
       e.preventDefault();
       setPrompt(e as BeforeInstallPromptEvent);
-      // Tunda muncul agar tidak langsung mengganggu
       setTimeout(() => setVisible(true), 3000);
     };
 
     window.addEventListener('beforeinstallprompt', handler);
     window.addEventListener('appinstalled', () => setInstalled(true));
-
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
@@ -56,41 +52,53 @@ export default function InstallBanner() {
 
   return (
     <div
-      className="fixed bottom-4 left-4 right-4 z-50 rounded-2xl p-4 shadow-2xl animate-fadeInUp"
+      className="fixed bottom-4 left-4 right-4 z-50 rounded-2xl p-4 animate-fadeInUp"
       style={{
-        background: 'linear-gradient(135deg, #0f766e, #0e7490)',
-        border: '1px solid rgba(255,255,255,0.15)',
+        background: 'linear-gradient(135deg, #0b7265, #0b6a7e)',
+        border: '1px solid rgba(255,255,255,0.12)',
+        boxShadow: '0 8px 32px rgba(11,114,101,0.4)',
         maxWidth: '480px',
         margin: '0 auto',
       }}
     >
       <button
         onClick={dismiss}
-        className="absolute top-3 right-3 p-1 rounded-full"
-        style={{ color: 'rgba(255,255,255,0.6)', background: 'rgba(255,255,255,0.1)' }}
+        className="absolute top-3 right-3 flex items-center justify-center w-6 h-6 rounded-full"
+        style={{ color: 'rgba(255,255,255,0.55)', background: 'rgba(255,255,255,0.1)' }}
+        aria-label="Tutup"
       >
-        <X size={14} />
+        <X size={13} />
       </button>
 
       <div className="flex items-center gap-3">
         <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-          style={{ background: 'rgba(255,255,255,0.15)' }}
+          className="flex items-center justify-center rounded-xl shrink-0"
+          style={{ width: '42px', height: '42px', background: 'rgba(255,255,255,0.15)' }}
         >
-          <Smartphone size={20} color="white" />
+          <Smartphone size={20} color="white" strokeWidth={2} />
         </div>
         <div className="flex-1">
-          <p className="text-white font-bold text-sm">Install Aplikasi</p>
-          <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.75)' }}>
+          <p style={{ color: 'white', fontWeight: 700, fontSize: '13px', letterSpacing: '-0.01em' }}>
+            Install Aplikasi
+          </p>
+          <p style={{ color: 'rgba(255,255,255,0.72)', fontSize: '12px', marginTop: '2px' }}>
             Akses lebih cepat, bisa dibuka offline
           </p>
         </div>
         <button
           onClick={install}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold shrink-0 transition-all hover:scale-95 active:scale-90"
-          style={{ background: 'white', color: '#0f766e' }}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl shrink-0 transition-all"
+          style={{
+            background: 'white',
+            color: '#0b7265',
+            fontSize: '12px',
+            fontWeight: 700,
+            letterSpacing: '0.01em',
+          }}
+          onMouseEnter={e => (e.currentTarget.style.opacity = '0.92')}
+          onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
         >
-          <Download size={12} />
+          <Download size={12} strokeWidth={2.5} />
           Install
         </button>
       </div>

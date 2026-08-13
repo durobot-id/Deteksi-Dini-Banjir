@@ -57,6 +57,8 @@ export interface HistoryEntry {
   status: FloodStatus;
 }
 
+// DEFAULT_THRESHOLDS hanya dipakai sebagai fallback sementara sebelum Firebase load
+// Tidak dipakai sebagai nilai "default tampilan" — semua UI menunggu data Firebase
 export const DEFAULT_THRESHOLDS: ThresholdData = {
   AMAN: 80,
   SIAGA: 100,
@@ -64,7 +66,8 @@ export const DEFAULT_THRESHOLDS: ThresholdData = {
   KRITIS: 150,
 };
 
-export function getFloodStatus(cm: number, thresholds: ThresholdData = DEFAULT_THRESHOLDS): FloodStatus {
+// threshold wajib dari Firebase — jika null, status tidak dihitung
+export function getFloodStatus(cm: number, thresholds: ThresholdData): FloodStatus {
   if (cm >= thresholds.KRITIS) return 'kritis';
   if (cm >= thresholds.BAHAYA) return 'bahaya';
   if (cm >= thresholds.SIAGA)  return 'siaga';
@@ -80,10 +83,10 @@ export function getStatusLabel(status: FloodStatus): string {
 
 export function getStatusColor(status: FloodStatus) {
   const colors: Record<FloodStatus, { bg: string; text: string; border: string; hex: string }> = {
-    aman:   { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', hex: '#10b981' },
-    siaga:  { bg: 'bg-amber-50',   text: 'text-amber-700',   border: 'border-amber-200',   hex: '#f59e0b' },
+    aman:   { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', hex: '#0ea56e' },
+    siaga:  { bg: 'bg-amber-50',   text: 'text-amber-700',   border: 'border-amber-200',   hex: '#e09a10' },
     bahaya: { bg: 'bg-orange-50',  text: 'text-orange-700',  border: 'border-orange-200',  hex: '#f97316' },
-    kritis: { bg: 'bg-red-50',     text: 'text-red-700',     border: 'border-red-200',     hex: '#ef4444' },
+    kritis: { bg: 'bg-red-50',     text: 'text-red-700',     border: 'border-red-200',     hex: '#e84040' },
   };
   return colors[status];
 }

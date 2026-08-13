@@ -1,11 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { Cloud, Droplets, Wind, Thermometer, TrendingUp, RefreshCw, AlertTriangle } from 'lucide-react';
+import {
+  Cloud, Droplets, Wind, Thermometer, TrendingUp,
+  RefreshCw, AlertTriangle, Sun, CloudRain, CloudLightning,
+  CloudSnow, CloudDrizzle, Haze, Eye,
+} from 'lucide-react';
 import {
   useBmkgWeather,
   predictFloodRisk,
-  getWeatherEmoji,
   isHeavyRain,
   isRainy,
   formatHour,
@@ -18,6 +21,46 @@ interface WeatherForecastProps {
   ketinggian: number;
 }
 
+// Map weather description → Lucide icon (no emoji)
+function WeatherIcon({ desc, size = 22 }: { desc: string; size?: number }) {
+  const d = desc.toLowerCase();
+  const style = { flexShrink: 0 as const };
+
+  if (d.includes('petir') || d.includes('badai') || d.includes('thunder') || d.includes('storm')) {
+    return <CloudLightning size={size} style={style} strokeWidth={1.8} />;
+  }
+  if (d.includes('lebat') || d.includes('hujan deras') || d.includes('heavy')) {
+    return <CloudRain size={size} style={style} strokeWidth={1.8} />;
+  }
+  if (d.includes('hujan') || d.includes('rain') || d.includes('shower')) {
+    return <CloudDrizzle size={size} style={style} strokeWidth={1.8} />;
+  }
+  if (d.includes('salju') || d.includes('snow') || d.includes('hail')) {
+    return <CloudSnow size={size} style={style} strokeWidth={1.8} />;
+  }
+  if (d.includes('kabut') || d.includes('asap') || d.includes('fog') || d.includes('haze') || d.includes('mist')) {
+    return <Haze size={size} style={style} strokeWidth={1.8} />;
+  }
+  if (d.includes('berawan') || d.includes('mendung') || d.includes('cloud') || d.includes('overcast')) {
+    return <Cloud size={size} style={style} strokeWidth={1.8} />;
+  }
+  if (d.includes('cerah') || d.includes('clear') || d.includes('sunny') || d.includes('fair')) {
+    return <Sun size={size} style={style} strokeWidth={1.8} />;
+  }
+  return <Eye size={size} style={style} strokeWidth={1.8} />;
+}
+
+// Derive icon color from weather type
+function getWeatherIconColor(desc: string): string {
+  const d = desc.toLowerCase();
+  if (d.includes('petir') || d.includes('badai') || d.includes('thunder')) return '#ef4444';
+  if (d.includes('lebat') || d.includes('heavy')) return '#3b82f6';
+  if (d.includes('hujan') || d.includes('rain') || d.includes('shower')) return '#60a5fa';
+  if (d.includes('kabut') || d.includes('fog')) return '#94a3b8';
+  if (d.includes('cerah') || d.includes('clear') || d.includes('sunny')) return '#f59e0b';
+  return '#6b9e96';
+}
+
 export default function WeatherForecast({ adm4, namaWilayah, ketinggian }: WeatherForecastProps) {
   const { forecast, loading, error } = useBmkgWeather(adm4, namaWilayah);
   const [activeDay, setActiveDay] = useState(0);
@@ -26,17 +69,29 @@ export default function WeatherForecast({ adm4, namaWilayah, ketinggian }: Weath
     ? Math.min(activeDay, forecast.days.length - 1)
     : 0;
 
-  // Ganti kondisi !lat || !lng menjadi:
   if (!adm4) {
     return (
-      <div className="card p-5">
+      <div className="card" style={{ padding: '20px' }}>
         <SectionHeader />
-        <div className="flex items-center justify-center py-6 rounded-xl" style={{ background: '#f0fdfa' }}>
-          <p className="text-sm" style={{ color: '#94b5af' }}>
-            Kode wilayah BMKG belum diisi di Firebase
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '28px 16px',
+            borderRadius: '12px',
+            marginTop: '14px',
+            background: 'var(--surface)',
+            gap: '6px',
+          }}
+        >
+          <Cloud size={26} style={{ color: '#b2cdc9' }} strokeWidth={1.5} />
+          <p style={{ fontSize: '13px', color: '#94b5af', fontWeight: 500 }}>
+            Kode wilayah BMKG belum diisi
           </p>
-          <p className="text-xs mt-1" style={{ color: '#b2cdc9' }}>
-            Tambahkan <code>cuaca_config.adm4</code> di Firebase
+          <p style={{ fontSize: '11px', color: '#b2cdc9', marginTop: '2px' }}>
+            Tambahkan <code style={{ fontFamily: 'var(--font-mono)', fontSize: '10px' }}>cuaca_config.adm4</code> di Firebase
           </p>
         </div>
       </div>
@@ -45,18 +100,18 @@ export default function WeatherForecast({ adm4, namaWilayah, ketinggian }: Weath
 
   if (loading) {
     return (
-      <div className="card p-5">
+      <div className="card" style={{ padding: '20px' }}>
         <SectionHeader />
-        <div className="flex flex-col gap-3 mt-4">
-          <div className="h-24 rounded-2xl animate-pulse" style={{ background: '#f0fdfa' }} />
-          <div className="flex gap-2">
-            {[0,1,2].map(i => (
-              <div key={i} className="h-8 flex-1 rounded-xl animate-pulse" style={{ background: '#f0fdfa' }} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '14px' }}>
+          <div className="skeleton" style={{ height: '88px', width: '100%' }} />
+          <div style={{ display: 'flex', gap: '6px' }}>
+            {[0, 1, 2].map(i => (
+              <div key={i} className="skeleton" style={{ height: '36px', flex: 1, borderRadius: '10px' }} />
             ))}
           </div>
-          <div className="flex gap-2 overflow-hidden">
-            {[0,1,2,3,4,5,6,7].map(i => (
-              <div key={i} className="h-28 w-16 shrink-0 rounded-xl animate-pulse" style={{ background: '#f0fdfa' }} />
+          <div style={{ display: 'flex', gap: '8px', overflow: 'hidden' }}>
+            {[0, 1, 2, 3, 4].map(i => (
+              <div key={i} className="skeleton" style={{ height: '110px', width: '68px', flexShrink: 0, borderRadius: '14px' }} />
             ))}
           </div>
         </div>
@@ -66,17 +121,29 @@ export default function WeatherForecast({ adm4, namaWilayah, ketinggian }: Weath
 
   if (error || !forecast) {
     return (
-      <div className="card p-5">
+      <div className="card" style={{ padding: '20px' }}>
         <SectionHeader />
-        <div className="flex items-center gap-3 p-4 rounded-xl mt-4"
-          style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)' }}>
-          <AlertTriangle size={16} style={{ color: '#ef4444', flexShrink: 0 }} />
-          <div className="flex-1">
-            <p className="text-sm font-semibold" style={{ color: '#ef4444' }}>Gagal memuat data BMKG</p>
-            <p className="text-xs mt-0.5" style={{ color: '#94b5af' }}>{error ?? 'Coba refresh halaman'}</p>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            padding: '14px',
+            borderRadius: '12px',
+            marginTop: '14px',
+            background: 'rgba(232,64,64,0.06)',
+            border: '1px solid rgba(232,64,64,0.15)',
+          }}
+        >
+          <AlertTriangle size={16} style={{ color: '#e84040', flexShrink: 0 }} strokeWidth={2} />
+          <div style={{ flex: 1 }}>
+            <p style={{ fontSize: '13px', fontWeight: 600, color: '#e84040' }}>Gagal memuat data BMKG</p>
+            <p style={{ fontSize: '11px', marginTop: '2px', color: '#94b5af' }}>{error ?? 'Coba refresh halaman'}</p>
           </div>
-          <button onClick={() => window.location.reload()}
-            className="p-1.5 rounded-lg" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>
+          <button
+            onClick={() => window.location.reload()}
+            style={{ padding: '6px', borderRadius: '8px', background: 'rgba(232,64,64,0.1)', color: '#e84040', display: 'flex' }}
+          >
             <RefreshCw size={12} />
           </button>
         </div>
@@ -84,169 +151,277 @@ export default function WeatherForecast({ adm4, namaWilayah, ketinggian }: Weath
     );
   }
 
-  // Guard: data BMKG belum ada isinya (days kosong)
   if (!forecast.days || forecast.days.length === 0) {
     return (
       <div className="card p-5">
         <SectionHeader />
-        <div className="flex items-center justify-center py-6 rounded-xl mt-4" style={{ background: '#f0fdfa' }}>
-          <p className="text-sm" style={{ color: '#94b5af' }}>Data cuaca BMKG tidak tersedia untuk wilayah ini</p>
+        <div
+          className="flex items-center justify-center py-8 rounded-xl mt-4"
+          style={{ background: 'var(--surface)' }}
+        >
+          <p style={{ fontSize: '13px', color: '#94b5af' }}>Data cuaca BMKG tidak tersedia untuk wilayah ini</p>
         </div>
       </div>
     );
   }
 
   const prediction = predictFloodRisk(forecast.allItems, ketinggian);
-  const safeDayIndex = safeActiveDay;
-  const currentDay = forecast.days[safeDayIndex];
+  const currentDay = forecast.days[safeActiveDay];
 
   return (
-    <div className="card p-5">
+    <div className="card" style={{ padding: '20px' }}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Cloud size={14} style={{ color: '#6b9e96' }} />
-          <div>
-            <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: '#6b9e96' }}>
-              Prakiraan Cuaca & Prediksi Banjir
-            </span>
-            <p className="text-xs mt-0.5" style={{ color: '#b2cdc9' }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          gap: '8px',
+          marginBottom: '14px',
+          flexWrap: 'wrap',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+          <div
+            style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(7,176,204,0.1)', color: '#07b0cc', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+          >
+            <Cloud size={14} strokeWidth={2.2} />
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <p
+              style={{
+                fontSize: '10px',
+                fontWeight: 700,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: '#6b9e96',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Prakiraan Cuaca
+            </p>
+            <p
+              style={{
+                fontSize: '11px',
+                marginTop: '1px',
+                color: '#b2cdc9',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
               BMKG · {forecast.wilayah}
             </p>
           </div>
         </div>
-        <span className="text-xs px-2 py-1 rounded-full font-medium"
-          style={{ background: '#f0fdfa', color: '#6b9e96', fontFamily: 'var(--font-mono)' }}>
+        <span
+          style={{
+            fontSize: '10px',
+            fontFamily: 'var(--font-mono)',
+            color: '#6b9e96',
+            background: 'var(--surface)',
+            padding: '3px 8px',
+            borderRadius: '999px',
+            fontWeight: 600,
+            flexShrink: 0,
+            whiteSpace: 'nowrap',
+          }}
+        >
           {forecast.fetchedAt.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
         </span>
       </div>
 
       {/* Prediksi Risiko Banjir */}
-      <div className="rounded-2xl p-4 mb-4"
-        style={{ background: prediction.bgColor, border: `1.5px solid ${prediction.color}25` }}>
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <span style={{ fontSize: '1.1rem' }}>{prediction.emoji}</span>
-              <span className="font-extrabold text-sm" style={{ color: prediction.color }}>
-                {prediction.label}
-              </span>
-            </div>
-            <p className="text-xs leading-relaxed" style={{ color: '#5a8a84' }}>
-              {prediction.description}
-            </p>
-          </div>
+      <div
+        style={{
+          borderRadius: '16px',
+          padding: '14px',
+          marginBottom: '14px',
+          background: prediction.bgColor,
+          border: `1.5px solid ${prediction.color}20`,
+        }}
+      >
+        {/* Label + deskripsi */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+          <TrendingUp size={13} strokeWidth={2.2} style={{ color: prediction.color, flexShrink: 0 }} />
+          <span style={{ fontWeight: 800, fontSize: '13px', color: prediction.color }}>
+            {prediction.label}
+          </span>
           {prediction.estimatedRiseCm > 0 && (
-            <div className="flex flex-col items-center px-3 py-2 rounded-xl shrink-0"
-              style={{ background: `${prediction.color}15` }}>
-              <TrendingUp size={14} style={{ color: prediction.color }} />
-              <span className="font-extrabold text-base mt-0.5"
-                style={{ color: prediction.color, fontFamily: 'var(--font-mono)' }}>
-                +{prediction.estimatedRiseCm}
-              </span>
-              <span className="text-xs font-medium" style={{ color: prediction.color, opacity: 0.7 }}>
-                cm est.
-              </span>
-            </div>
+            <span
+              style={{
+                marginLeft: 'auto',
+                fontWeight: 800,
+                fontSize: '13px',
+                color: prediction.color,
+                fontFamily: 'var(--font-mono)',
+                flexShrink: 0,
+                background: `${prediction.color}12`,
+                padding: '2px 8px',
+                borderRadius: '999px',
+              }}
+            >
+              +{prediction.estimatedRiseCm} cm
+            </span>
           )}
         </div>
+        <p style={{ fontSize: '12px', lineHeight: 1.5, color: '#5a8a84', marginBottom: '10px' }}>
+          {prediction.description}
+        </p>
 
-        {/* Stats */}
-        <div className="flex gap-3 mt-3 flex-wrap">
-          <div className="flex items-center gap-1">
-            <Droplets size={11} style={{ color: prediction.color }} />
-            <span className="text-xs font-semibold" style={{ color: '#5a8a84' }}>
-              Hujan: <strong style={{ color: prediction.color }}>{prediction.rainHours} jam</strong>
-            </span>
-          </div>
+        {/* Stats baris bawah */}
+        <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
+          <StatChip icon={<CloudRain size={11} strokeWidth={2} />} color={prediction.color}>
+            Hujan: <b>{prediction.rainHours} jam</b>
+          </StatChip>
           {prediction.heavyRainHours > 0 && (
-            <div className="flex items-center gap-1">
-              <span style={{ fontSize: '10px' }}>⛈️</span>
-              <span className="text-xs font-semibold" style={{ color: '#5a8a84' }}>
-                Lebat: <strong style={{ color: '#ef4444' }}>{prediction.heavyRainHours} jam</strong>
-              </span>
-            </div>
+            <StatChip icon={<CloudLightning size={11} strokeWidth={2} />} color="#e84040">
+              Lebat: <b>{prediction.heavyRainHours} jam</b>
+            </StatChip>
           )}
-          <div className="flex items-center gap-1">
-            <span style={{ fontSize: '10px' }}>💧</span>
-            <span className="text-xs font-semibold" style={{ color: '#5a8a84' }}>
-              Kelembaban maks: <strong style={{ color: prediction.color }}>{prediction.maxHumidity}%</strong>
-            </span>
-          </div>
+          <StatChip icon={<Droplets size={11} strokeWidth={2} />} color={prediction.color}>
+            Lembab: <b>{prediction.maxHumidity}%</b>
+          </StatChip>
         </div>
       </div>
 
-      {/* Tab pilih hari */}
-      <div className="flex gap-2 mb-3">
+      {/* Day tabs — grid agar tidak tumpang tindih */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: `repeat(${Math.min(forecast.days.length, 4)}, 1fr)`,
+          gap: '6px',
+          marginBottom: '12px',
+        }}
+      >
         {forecast.days.map((day, i) => {
-          const isActive = safeActiveDay === i;
-          const hasRain  = day.items?.some(it => isRainy(it.weather)) ?? false;
-          const hasHeavy = day.items?.some(it => isHeavyRain(it.weather)) ?? false;
-          const tabColor = hasHeavy ? '#ef4444' : hasRain ? '#3b82f6' : '#14b8a6';
+          const isActive  = safeActiveDay === i;
+          const hasHeavy  = day.items?.some(it => isHeavyRain(it.weather)) ?? false;
+          const hasRain   = day.items?.some(it => isRainy(it.weather)) ?? false;
+          const tabColor  = hasHeavy ? '#e84040' : hasRain ? '#3b82f6' : '#12a896';
           return (
-            <button key={i} onClick={() => setActiveDay(i)}
-              className="flex-1 py-2 px-2 rounded-xl text-xs font-bold transition-all"
+            <button
+              key={i}
+              onClick={() => setActiveDay(i)}
               style={{
-                background: isActive ? tabColor : '#f0fdfa',
+                padding: '8px 4px',
+                borderRadius: '10px',
+                background: isActive ? tabColor : 'var(--surface)',
                 color: isActive ? 'white' : tabColor,
                 border: `1.5px solid ${isActive ? tabColor : tabColor + '40'}`,
-              }}>
-              <span>{day.dayLabel}</span>
-              <span className="ml-1 text-xs opacity-80">
-                {hasHeavy ? '⛈️' : hasRain ? '🌧️' : '☀️'}
+                fontSize: '11px',
+                fontWeight: 700,
+                letterSpacing: '0.01em',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '4px',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+              }}
+            >
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{day.dayLabel}</span>
+              <span style={{ opacity: 0.85, flexShrink: 0, display: 'flex' }}>
+                {hasHeavy ? (
+                  <CloudLightning size={10} />
+                ) : hasRain ? (
+                  <CloudRain size={10} />
+                ) : (
+                  <Sun size={10} />
+                )}
               </span>
             </button>
           );
         })}
       </div>
 
-      {/* Ringkasan hari yang dipilih */}
+      {/* Day summary */}
       <DaySummary day={currentDay} />
 
-      {/* Scroll per jam */}
-      <div className="overflow-x-auto mt-3 pb-1" style={{ scrollbarWidth: 'none' }}>
-        <div className="flex gap-2" style={{ width: 'max-content' }}>
+      {/* Hourly scroll — padding kiri-kanan agar tidak mepet */}
+      <div
+        style={{
+          overflowX: 'auto',
+          marginTop: '12px',
+          paddingBottom: '4px',
+          scrollbarWidth: 'none',
+          /* Extend scroll area slightly past card edge feel */
+          margin: '12px -4px 0',
+          padding: '0 4px 6px',
+        }}
+      >
+        <div style={{ display: 'flex', gap: '8px', width: 'max-content' }}>
           {currentDay.items.map((item, i) => {
             const rain        = isRainy(item.weather);
             const heavy       = isHeavyRain(item.weather);
-            const cardBg      = heavy ? 'rgba(239,68,68,0.07)' : rain ? 'rgba(96,165,250,0.08)' : '#f8fffe';
-            const accentColor = heavy ? '#ef4444' : rain ? '#3b82f6' : '#14b8a6';
+            const cardBg      = heavy ? 'rgba(232,64,64,0.07)' : rain ? 'rgba(96,165,250,0.08)' : 'var(--surface)';
+            const accentColor = heavy ? '#e84040' : rain ? '#3b82f6' : '#12a896';
+            const iconColor   = getWeatherIconColor(item.weather_desc);
 
             return (
-              <div key={i} className="flex flex-col items-center p-2.5 rounded-2xl"
-                style={{ width: '68px', background: cardBg, border: `1px solid ${accentColor}20`, flexShrink: 0 }}>
-                <span className="text-xs font-bold mb-1"
-                  style={{ color: '#6b9e96', fontFamily: 'var(--font-mono)' }}>
+              <div
+                key={i}
+                className="flex flex-col items-center p-2.5 rounded-2xl"
+                style={{
+                  width: '68px',
+                  background: cardBg,
+                  border: `1px solid ${accentColor}20`,
+                  flexShrink: 0,
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    marginBottom: '6px',
+                    color: '#6b9e96',
+                    fontFamily: 'var(--font-mono)',
+                  }}
+                >
                   {formatHour(item.datetime)}
                 </span>
-                <span style={{ fontSize: '1.5rem', lineHeight: 1, marginBottom: '4px' }}>
-                  {getWeatherEmoji(item.weather)}
+
+                {/* Weather icon instead of emoji */}
+                <span style={{ color: iconColor, marginBottom: '5px', display: 'flex' }}>
+                  <WeatherIcon desc={item.weather_desc} size={22} />
                 </span>
-                <span className="text-center mb-1.5"
-                  style={{ fontSize: '9px', color: accentColor, fontWeight: 600, lineHeight: 1.3 }}>
+
+                <span
+                  className="text-center mb-2"
+                  style={{
+                    fontSize: '9px',
+                    color: accentColor,
+                    fontWeight: 600,
+                    lineHeight: 1.3,
+                  }}
+                >
                   {item.weather_desc.length > 12 ? item.weather_desc.slice(0, 11) + '…' : item.weather_desc}
                 </span>
-                <div className="flex items-center gap-0.5 mb-0.5">
-                  <Thermometer size={9} style={{ color: '#f97316' }} />
-                  <span className="text-xs font-bold" style={{ color: '#0f2923', fontFamily: 'var(--font-mono)' }}>
+
+                <div className="flex items-center gap-0.5 mb-1">
+                  <Thermometer size={9} style={{ color: '#f97316' }} strokeWidth={2} />
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#0d2520', fontFamily: 'var(--font-mono)' }}>
                     {item.t}°
                   </span>
                 </div>
-                <div className="flex items-center gap-0.5 mb-0.5">
-                  <Droplets size={9} style={{ color: accentColor }} />
-                  <span className="text-xs font-semibold" style={{ color: accentColor, fontFamily: 'var(--font-mono)' }}>
+                <div className="flex items-center gap-0.5 mb-1">
+                  <Droplets size={9} style={{ color: accentColor }} strokeWidth={2} />
+                  <span style={{ fontSize: '11px', fontWeight: 600, color: accentColor, fontFamily: 'var(--font-mono)' }}>
                     {item.hu}%
                   </span>
                 </div>
                 <div className="flex items-center gap-0.5">
-                  <Wind size={9} style={{ color: '#94b5af' }} />
-                  <span className="text-xs" style={{ color: '#94b5af', fontFamily: 'var(--font-mono)' }}>
+                  <Wind size={9} style={{ color: '#94b5af' }} strokeWidth={2} />
+                  <span style={{ fontSize: '10px', color: '#94b5af', fontFamily: 'var(--font-mono)' }}>
                     {item.ws}
                   </span>
                 </div>
+
                 {heavy && (
-                  <span className="text-xs font-bold px-1.5 rounded-full mt-1"
-                    style={{ background: '#ef444420', color: '#ef4444', fontSize: '9px' }}>
+                  <span
+                    className="font-bold px-1.5 rounded-full mt-1.5"
+                    style={{ background: '#e8404020', color: '#e84040', fontSize: '8px', fontWeight: 800, letterSpacing: '0.05em' }}
+                  >
                     LEBAT
                   </span>
                 )}
@@ -256,20 +431,69 @@ export default function WeatherForecast({ adm4, namaWilayah, ketinggian }: Weath
         </div>
       </div>
 
-      <p className="text-xs mt-3" style={{ color: '#b2cdc9' }}>
-        🌡️ Suhu (°C) · 💧 Kelembaban (%) · 💨 Angin (km/j)
-      </p>
+      {/* Legend */}
+      <div
+        style={{
+          display: 'flex',
+          gap: '12px',
+          flexWrap: 'wrap',
+          marginTop: '14px',
+          paddingTop: '12px',
+          borderTop: '1px solid var(--border)',
+          color: '#b2cdc9',
+          fontSize: '10px',
+        }}
+      >
+        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Thermometer size={10} strokeWidth={1.8} /> Suhu (°C)</span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Droplets size={10} strokeWidth={1.8} /> Kelembaban (%)</span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Wind size={10} strokeWidth={1.8} /> Angin (km/j)</span>
+      </div>
     </div>
   );
 }
 
+// ── Helper components ──────────────────────────────────────────
+
 function SectionHeader() {
   return (
     <div className="flex items-center gap-2">
-      <Cloud size={14} style={{ color: '#6b9e96' }} />
-      <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: '#6b9e96' }}>
-        Prakiraan Cuaca & Prediksi Banjir
+      <div
+        className="flex items-center justify-center rounded-lg"
+        style={{ width: '28px', height: '28px', background: 'rgba(7,176,204,0.1)', color: '#07b0cc' }}
+      >
+        <Cloud size={14} strokeWidth={2.2} />
+      </div>
+      <span
+        style={{
+          fontSize: '10px',
+          fontWeight: 700,
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+          color: '#6b9e96',
+        }}
+      >
+        Prakiraan Cuaca &amp; Prediksi Banjir
       </span>
+    </div>
+  );
+}
+
+function StatChip({
+  icon,
+  color,
+  children,
+}: {
+  icon: React.ReactNode;
+  color: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className="flex items-center gap-1"
+      style={{ color: '#5a8a84', fontSize: '11px', fontWeight: 500 }}
+    >
+      <span style={{ color }}>{icon}</span>
+      <span>{children}</span>
     </div>
   );
 }
@@ -283,24 +507,36 @@ function DaySummary({ day }: { day: BmkgDayForecast }) {
   const heavyCnt = day.items.filter(i => isHeavyRain(i.weather)).length;
 
   return (
-    <div className="flex gap-2 flex-wrap">
-      <Chip icon="🌡️" label={`${minT}°–${maxT}°C`} />
-      <Chip icon="💧" label={`Kelembaban ~${avgHu}%`} />
-      <Chip icon="🌧️" label={`Hujan ${rainCnt * 3} jam`} color={rainCnt > 0 ? '#3b82f6' : undefined} />
-      {heavyCnt > 0 && <Chip icon="⛈️" label={`Lebat ${heavyCnt * 3} jam`} color="#ef4444" />}
+    <div className="flex gap-2 flex-wrap mb-1">
+      <Chip icon={<Thermometer size={10} strokeWidth={2} />} label={`${minT}°–${maxT}°C`} />
+      <Chip icon={<Droplets size={10} strokeWidth={2} />} label={`Kelembaban ~${avgHu}%`} />
+      <Chip
+        icon={<CloudRain size={10} strokeWidth={2} />}
+        label={`Hujan ${rainCnt * 3} jam`}
+        color={rainCnt > 0 ? '#3b82f6' : undefined}
+      />
+      {heavyCnt > 0 && (
+        <Chip
+          icon={<CloudLightning size={10} strokeWidth={2} />}
+          label={`Lebat ${heavyCnt * 3} jam`}
+          color="#e84040"
+        />
+      )}
     </div>
   );
 }
 
-function Chip({ icon, label, color }: { icon: string; label: string; color?: string }) {
+function Chip({ icon, label, color }: { icon: React.ReactNode; label: string; color?: string }) {
   return (
-    <div className="flex items-center gap-1 px-2.5 py-1 rounded-full"
+    <div
+      className="flex items-center gap-1 px-2.5 py-1 rounded-full"
       style={{
-        background: color ? `${color}10` : '#f0fdfa',
-        border: `1px solid ${color ? color + '25' : 'rgba(20,184,166,0.15)'}`,
-      }}>
-      <span style={{ fontSize: '11px' }}>{icon}</span>
-      <span className="text-xs font-semibold" style={{ color: color ?? '#6b9e96' }}>{label}</span>
+        background: color ? `${color}10` : 'var(--surface)',
+        border: `1px solid ${color ? color + '25' : 'rgba(12,160,140,0.14)'}`,
+      }}
+    >
+      <span style={{ color: color ?? '#6b9e96', display: 'flex' }}>{icon}</span>
+      <span style={{ fontSize: '11px', fontWeight: 600, color: color ?? '#6b9e96' }}>{label}</span>
     </div>
   );
 }

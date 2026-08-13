@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Droplets, AlertTriangle, Waves, Siren } from 'lucide-react';
 import { FloodStatus, getStatusColor, getStatusLabel } from '@/lib/types';
 
 interface WaterLevelGaugeProps {
@@ -11,22 +11,22 @@ interface WaterLevelGaugeProps {
 }
 
 const STATUS_BG: Record<FloodStatus, string> = {
-  aman:   'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)',
-  siaga:  'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
-  bahaya: 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)',
-  kritis: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)',
+  aman:   'linear-gradient(145deg, #edfaf7 0%, #d7f5ed 100%)',
+  siaga:  'linear-gradient(145deg, #fffbeb 0%, #fef3c4 100%)',
+  bahaya: 'linear-gradient(145deg, #fff6ed 0%, #ffead5 100%)',
+  kritis: 'linear-gradient(145deg, #fef2f2 0%, #fee0e0 100%)',
 };
 
-const STATUS_ICON: Record<FloodStatus, string> = {
-  aman:   '💧',
-  siaga:  '⚠️',
-  bahaya: '🌊',
-  kritis: '🚨',
+const STATUS_ICON: Record<FloodStatus, React.ReactNode> = {
+  aman:   <Droplets size={15} strokeWidth={2.2} />,
+  siaga:  <AlertTriangle size={15} strokeWidth={2.2} />,
+  bahaya: <Waves size={15} strokeWidth={2.2} />,
+  kritis: <Siren size={15} strokeWidth={2.2} />,
 };
 
 export default function WaterLevelGauge({ ketinggian, status, prevKetinggian }: WaterLevelGaugeProps) {
   const [displayed, setDisplayed] = useState(ketinggian);
-  const [animated, setAnimated] = useState(false);
+  const [animated, setAnimated]   = useState(false);
   const colors = getStatusColor(status);
 
   useEffect(() => {
@@ -38,43 +38,71 @@ export default function WaterLevelGauge({ ketinggian, status, prevKetinggian }: 
     return () => clearTimeout(t);
   }, [ketinggian]);
 
-  const delta = prevKetinggian !== undefined ? ketinggian - prevKetinggian : 0;
+  const delta     = prevKetinggian !== undefined ? ketinggian - prevKetinggian : 0;
   const showTrend = prevKetinggian !== undefined && Math.abs(delta) > 0.1;
   const TrendIcon = delta > 0.5 ? TrendingUp : delta < -0.5 ? TrendingDown : Minus;
-  const trendColor = delta > 0.5 ? '#ef4444' : delta < -0.5 ? '#10b981' : '#94a3b8';
+  const trendColor = delta > 0.5 ? '#e84040' : delta < -0.5 ? '#0ea56e' : '#94a3b8';
 
   return (
     <div
-      className="card relative overflow-hidden"
-      style={{ background: STATUS_BG[status], transition: 'background 0.6s ease' }}
+      style={{
+        background: STATUS_BG[status],
+        transition: 'background 0.5s ease',
+        borderRadius: '16px',
+        overflow: 'hidden',
+        position: 'relative',
+      }}
     >
-      {/* Subtle top border accent */}
+      {/* Top accent bar */}
       <div
-        className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl"
-        style={{ background: colors.hex, transition: 'background 0.4s ease' }}
+        style={{
+          position: 'absolute',
+          top: 0, left: 0, right: 0,
+          height: '3px',
+          background: `linear-gradient(90deg, ${colors.hex}, ${colors.hex}70)`,
+          transition: 'background 0.4s ease',
+        }}
       />
 
-      <div className="p-5 pt-6">
-        {/* Label */}
-        <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: `${colors.hex}99` }}>
+      <div style={{ padding: '20px 20px 20px', paddingTop: '24px' }}>
+        {/* Section label */}
+        <p
+          style={{
+            fontSize: '10px',
+            fontWeight: 700,
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            color: `${colors.hex}bb`,
+            marginBottom: '14px',
+          }}
+        >
           Ketinggian Air Saat Ini
         </p>
 
-        {/* Main reading — nilai + satuan sejajar */}
-        <div className="flex items-center justify-between">
+        {/* Layout: angka kiri, badge kanan — stack vertical agar tidak clash */}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '14px',
+          }}
+        >
+          {/* Baris 1: Angka + satuan */}
           <div
-            className="flex items-baseline gap-2"
             style={{
+              display: 'flex',
+              alignItems: 'baseline',
+              gap: '8px',
               opacity: animated ? 1 : 0,
               transform: animated ? 'translateY(0)' : 'translateY(10px)',
-              transition: 'all 0.4s ease',
+              transition: 'all 0.45s cubic-bezier(.22,.68,0,1.2)',
             }}
           >
             <span
               style={{
                 fontSize: 'clamp(52px, 14vw, 80px)',
                 lineHeight: 1,
-                fontWeight: 800,
+                fontWeight: 900,
                 color: colors.hex,
                 fontFamily: 'var(--font-mono)',
                 letterSpacing: '-0.04em',
@@ -84,30 +112,42 @@ export default function WaterLevelGauge({ ketinggian, status, prevKetinggian }: 
             </span>
             <span
               style={{
-                fontSize: '1.25rem',
+                fontSize: '20px',
                 fontWeight: 600,
                 color: colors.hex,
-                opacity: 0.65,
-                marginBottom: '4px',
+                opacity: 0.5,
+                paddingBottom: '6px',
               }}
             >
               cm
             </span>
           </div>
 
-          {/* Status badge — dari Firebase */}
-          <div className="flex flex-col items-end gap-2">
+          {/* Baris 2: Badge status + trend — baris terpisah agar tidak tumpang tindih */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            {/* Badge status */}
             <div
-              className="flex items-center gap-2 px-4 py-2 rounded-2xl"
               style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '7px 14px',
+                borderRadius: '999px',
                 background: `${colors.hex}18`,
                 border: `1.5px solid ${colors.hex}35`,
+                whiteSpace: 'nowrap',
               }}
             >
-              <span style={{ fontSize: '1.1rem' }}>{STATUS_ICON[status]}</span>
+              <span style={{ color: colors.hex, display: 'flex', flexShrink: 0 }}>
+                {STATUS_ICON[status]}
+              </span>
               <span
-                className="font-extrabold text-sm tracking-wide"
-                style={{ color: colors.hex }}
+                style={{
+                  fontWeight: 800,
+                  fontSize: '13px',
+                  letterSpacing: '0.02em',
+                  color: colors.hex,
+                }}
               >
                 {getStatusLabel(status)}
               </span>
@@ -115,14 +155,23 @@ export default function WaterLevelGauge({ ketinggian, status, prevKetinggian }: 
 
             {/* Trend delta */}
             {showTrend && (
-              <div className="flex items-center gap-1" style={{ color: trendColor }}>
-                <TrendIcon size={12} strokeWidth={2.5} />
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  color: trendColor,
+                }}
+              >
+                <TrendIcon size={13} strokeWidth={2.5} />
                 <span
-                  className="text-xs font-bold"
-                  style={{ fontFamily: 'var(--font-mono)' }}
+                  style={{
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    fontFamily: 'var(--font-mono)',
+                  }}
                 >
-                  {delta > 0 ? '+' : ''}
-                  {delta.toFixed(1)} cm
+                  {delta > 0 ? '+' : ''}{delta.toFixed(1)} cm
                 </span>
               </div>
             )}

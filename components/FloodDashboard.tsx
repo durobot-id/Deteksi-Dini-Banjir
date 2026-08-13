@@ -13,8 +13,8 @@ import InstallBanner from '@/components/InstallBanner';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 import WeatherForecast from '@/components/WeatherForecast';
 import NotificationPermission from '@/components/NotificationPermission';
-import { getFloodStatus } from '@/lib/types';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import { getFloodStatus, DEFAULT_THRESHOLDS } from '@/lib/types';
+import { AlertCircle, RefreshCw, Loader2 } from 'lucide-react';
 
 export default function FloodDashboard() {
   const {
@@ -33,33 +33,60 @@ export default function FloodDashboard() {
   const prevKetinggian = prevKetinggianRef.current;
   if (data) prevKetinggianRef.current = data.ketinggian_air;
 
-  const status = data ? getFloodStatus(data.ketinggian_air, thresholds) : 'aman';
+  // Pakai threshold dari Firebase; jika belum ada fallback ke default hanya untuk kalkulasi
+  const activeThresholds = thresholds ?? DEFAULT_THRESHOLDS;
+  const status = data ? getFloodStatus(data.ketinggian_air, activeThresholds) : 'aman';
 
+  // ── Loading state ──
   if (loading) return <LoadingSkeleton />;
 
+  // ── Error state ──
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6" style={{ background: '#f8fffe' }}>
-        <div className="card p-8 max-w-sm w-full text-center">
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
-            style={{ background: 'rgba(239,68,68,0.1)' }}>
-            <AlertCircle size={28} style={{ color: '#ef4444' }} />
+      <div
+        className="min-h-screen flex items-center justify-center p-4"
+        style={{ background: 'var(--surface)' }}
+      >
+        <div
+          className="card w-full text-center"
+          style={{ maxWidth: '360px', padding: '32px 24px' }}
+        >
+          <div
+            className="flex items-center justify-center mx-auto mb-4 rounded-2xl"
+            style={{ width: '56px', height: '56px', background: 'rgba(232,64,64,0.1)' }}
+          >
+            <AlertCircle size={26} style={{ color: '#e84040' }} strokeWidth={2} />
           </div>
-          <h2 className="font-bold text-lg mb-2" style={{ color: '#0f2923' }}>
+          <h2 style={{ fontWeight: 800, fontSize: '17px', color: '#0d2520', marginBottom: '8px' }}>
             Gagal Terhubung
           </h2>
-          <p className="text-sm mb-5" style={{ color: '#6b9e96' }}>{error}</p>
-          <div className="text-xs p-3 rounded-xl text-left mb-4"
-            style={{ background: '#f0fdfa', color: '#0d9488', fontFamily: 'var(--font-mono)' }}>
-            <p className="font-bold mb-1">Periksa:</p>
+          <p style={{ fontSize: '13px', color: '#6b9e96', marginBottom: '20px', lineHeight: 1.5 }}>
+            {error}
+          </p>
+          <div
+            style={{
+              background: 'var(--surface)',
+              borderRadius: '12px',
+              padding: '12px',
+              marginBottom: '20px',
+              textAlign: 'left',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '11px',
+              color: '#0d8f7e',
+              lineHeight: 1.7,
+            }}
+          >
+            <p style={{ fontWeight: 700, marginBottom: '4px' }}>Periksa:</p>
             <p>• Konfigurasi Firebase di .env.local</p>
             <p>• Rules Firebase diset ke public</p>
             <p>• Koneksi internet aktif</p>
           </div>
-          <button onClick={() => window.location.reload()}
-            className="flex items-center gap-2 mx-auto text-sm font-semibold px-4 py-2 rounded-xl transition-all hover:scale-95 active:scale-90"
-            style={{ background: '#14b8a6', color: 'white' }}>
-            <RefreshCw size={14} />
+          <button
+            onClick={() => window.location.reload()}
+            className="flex items-center gap-2 mx-auto px-5 py-2.5 rounded-xl"
+            style={{ background: '#12a896', color: 'white', fontSize: '13px', fontWeight: 700 }}
+          >
+            <RefreshCw size={14} strokeWidth={2.5} />
             Coba Lagi
           </button>
         </div>
@@ -67,54 +94,90 @@ export default function FloodDashboard() {
     );
   }
 
+  // ── Waiting for Firebase data (sensor ada tapi thresholds belum) ──
+  if (!data) {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: 'var(--surface)' }}
+      >
+        <div className="flex flex-col items-center gap-3">
+          <Loader2
+            size={28}
+            style={{ color: '#12a896', animation: 'spin 1s linear infinite' }}
+            strokeWidth={2}
+          />
+          <p style={{ fontSize: '13px', color: '#6b9e96', fontWeight: 500 }}>
+            Menunggu data sensor…
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // Koordinat: prioritas dari cuaca_config, fallback ke sensor_banjir
-  const koordinat = cuacaConfig?.koordinat ?? data?.koordinat;
+  // Jika tidak ada koordinat sama sekali → peta tidak ditampilkan
+  const koordinat = cuacaConfig?.koordinat ?? data.koordinat;
 
   return (
     <>
       <Header isOnline={isDeviceOnline} />
 
-      <main className="max-w-4xl mx-auto px-4 py-4 pb-24 flex flex-col gap-4 animate-fadeInUp">
+      <main
+        style={{
+          maxWidth: '600px',
+          margin: '0 auto',
+          padding: '16px 20px 96px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '14px',
+        }}
+        className="animate-fadeInUp"
+      >
+        {/* Izin notifikasi */}
         <NotificationPermission />
 
-        {data && (status === 'bahaya' || status === 'kritis') && (
+        {/* Banner peringatan — hanya muncul saat bahaya/kritis */}
+        {(status === 'bahaya' || status === 'kritis') && (
           <AlertBanner status={status} ketinggian={data.ketinggian_air} />
         )}
 
-        {data && (
-          <WaterLevelGauge
-            ketinggian={data.ketinggian_air}
-            status={status}
-            prevKetinggian={prevKetinggian}
-          />
-        )}
+        {/* Gauge ketinggian air */}
+        <WaterLevelGauge
+          ketinggian={data.ketinggian_air}
+          status={status}
+          prevKetinggian={prevKetinggian}
+        />
 
-        {data && <StatusCards data={data} lastUpdated={lastUpdated} />}
+        {/* Status cards — 2 kolom, adaptif */}
+        <StatusCards data={data} lastUpdated={lastUpdated} />
 
-        {/* Peta — koordinat dari cuaca_config */}
-        {data && (
+        {/* Peta — hanya jika ada koordinat dari Firebase */}
+        {koordinat && (
           <MapWidget
             data={{ ...data, koordinat }}
             status={status}
           />
         )}
 
-        {/* Cuaca BMKG — adm4 dari cuaca_config */}
-        <WeatherForecast
-          adm4={cuacaConfig?.adm4}
-          namaWilayah={cuacaConfig?.nama_wilayah}
-          ketinggian={data?.ketinggian_air ?? 0}
-        />
-
-        <HistoryChart history={history} onClear={clearHistory} thresholds={thresholds} />
-
-        {data && (
-          <Notifications
-            currentStatus={status}
+        {/* Prakiraan cuaca BMKG — hanya jika cuaca_config ada di Firebase */}
+        {cuacaConfig?.adm4 && (
+          <WeatherForecast
+            adm4={cuacaConfig.adm4}
+            namaWilayah={cuacaConfig.nama_wilayah}
             ketinggian={data.ketinggian_air}
-            thresholds={thresholds}
           />
         )}
+
+        {/* Grafik riwayat */}
+        <HistoryChart history={history} onClear={clearHistory} thresholds={activeThresholds} />
+
+        {/* Notifikasi & alarm */}
+        <Notifications
+          currentStatus={status}
+          ketinggian={data.ketinggian_air}
+          thresholds={activeThresholds}
+        />
       </main>
 
       <InstallBanner />

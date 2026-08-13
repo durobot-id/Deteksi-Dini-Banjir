@@ -1,97 +1,169 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @import "tailwindcss";
 
 :root {
-  --teal-50: #f0fdfa;
-  --teal-100: #ccfbf1;
-  --teal-200: #99f6e4;
-  --teal-300: #5eead4;
-  --teal-400: #2dd4bf;
-  --teal-500: #14b8a6;
-  --teal-600: #0d9488;
-  --teal-700: #0f766e;
-  --teal-800: #115e59;
-  --teal-900: #134e4a;
+  /* Brand palette */
+  --teal-50:  #edfaf7;
+  --teal-100: #d0f4ec;
+  --teal-200: #a1e9d9;
+  --teal-300: #5dd5c0;
+  --teal-400: #2bbfab;
+  --teal-500: #12a896;
+  --teal-600: #0d8f7e;
+  --teal-700: #0b7265;
+  --teal-800: #0c5c52;
+  --teal-900: #0d4a43;
 
-  --cyan-50: #ecfeff;
-  --cyan-100: #cffafe;
-  --cyan-400: #22d3ee;
-  --cyan-500: #06b6d4;
+  --cyan-400: #20c8e0;
+  --cyan-500: #07b0cc;
 
-  --safe: #10b981;
-  --warning: #f59e0b;
-  --danger: #ef4444;
-  --critical: #dc2626;
+  /* Semantic status */
+  --safe:     #0ea56e;
+  --warning:  #e09a10;
+  --danger:   #e84040;
+  --critical: #c91c1c;
 
-  --surface: #f8fffe;
-  --surface-card: #ffffff;
-  --border: rgba(20, 184, 166, 0.15);
+  /* Surfaces */
+  --surface:       #f1f7f6;
+  --surface-card:  #ffffff;
+  --surface-sunken:#e8f2f0;
+  --border:        rgba(12, 160, 140, 0.13);
+  --border-strong: rgba(12, 160, 140, 0.24);
 
-  --font-display: 'Plus Jakarta Sans', sans-serif;
-  --font-mono: 'DM Mono', monospace;
+  /* Typography */
+  --font-display: 'Inter', system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Shadows */
+  --shadow-xs:   0 1px 2px rgba(9, 100, 88, 0.06);
+  --shadow-sm:   0 2px 8px rgba(9, 100, 88, 0.08), 0 1px 2px rgba(9, 100, 88, 0.04);
+  --shadow-md:   0 4px 16px rgba(9, 100, 88, 0.1), 0 2px 4px rgba(9, 100, 88, 0.05);
+  --shadow-lg:   0 8px 32px rgba(9, 100, 88, 0.12), 0 4px 8px rgba(9, 100, 88, 0.06);
+
+  /* Radii */
+  --radius-sm:   8px;
+  --radius-md:   12px;
+  --radius-lg:   16px;
+  --radius-xl:   20px;
+  --radius-pill: 999px;
 }
 
-* { box-sizing: border-box; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
   background: var(--surface);
-  color: #0f2923;
+  color: #0d2520;
   font-family: var(--font-display);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-::-webkit-scrollbar { width: 4px; }
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--teal-300); border-radius: 99px; }
 
-@keyframes ripple {
-  0% { transform: scale(0.8); opacity: 1; }
-  100% { transform: scale(2.4); opacity: 0; }
-}
-@keyframes pulse-ring {
-  0%, 100% { opacity: 0.6; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.05); }
-}
-@keyframes flow {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
+/* ── Keyframes ── */
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 @keyframes slideIn {
-  from { opacity: 0; transform: translateX(-8px); }
-  to { opacity: 1; transform: translateX(0); }
+  from { opacity: 0; transform: translateX(-10px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes ripple {
+  0%   { transform: scale(0.85); opacity: 1; }
+  100% { transform: scale(2.4);  opacity: 0; }
+}
+@keyframes pulse-ring {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50%       { opacity: 1;    transform: scale(1.04); }
+}
+@keyframes shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position: 600px 0; }
 }
 @keyframes countUp {
   from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes flow {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+@keyframes alertPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.82; }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1;   transform: scale(1); }
+  50%        { opacity: 0.6; transform: scale(0.85); }
 }
 
-.animate-fadeInUp { animation: fadeInUp 0.4s ease forwards; }
-.animate-slideIn { animation: slideIn 0.35s ease forwards; }
-.animate-ripple { animation: ripple 1.8s ease-out infinite; }
-.animate-countUp { animation: countUp 0.5s ease forwards; }
+/* ── Utility animation classes ── */
+.animate-fadeInUp  { animation: fadeInUp 0.45s cubic-bezier(.22,.68,0,1.2) forwards; }
+.animate-slideIn   { animation: slideIn 0.35s ease forwards; }
+.animate-ripple    { animation: ripple 1.8s ease-out infinite; }
+.animate-countUp   { animation: countUp 0.5s ease forwards; }
+.animate-alertPulse{ animation: alertPulse 1.4s ease-in-out infinite; }
 
+/* ── Card ── */
 .card {
   background: var(--surface-card);
   border: 1px solid var(--border);
-  border-radius: 16px;
-  box-shadow: 0 2px 12px rgba(14, 165, 233, 0.06);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s ease;
+  /* Penting: mencegah card overflow saat di dalam grid/flex */
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+.card:where([data-hover]) {
+  &:hover { box-shadow: var(--shadow-md); }
 }
 
-.status-safe { color: var(--safe); background: rgba(16, 185, 129, 0.08); }
-.status-warning { color: var(--warning); background: rgba(245, 158, 11, 0.08); }
-.status-danger { color: var(--danger); background: rgba(239, 68, 68, 0.08); }
-
-.wave-bg {
-  background: linear-gradient(135deg, #f0fdfa 0%, #ecfeff 50%, #f0fdfa 100%);
+/* ── Responsive grid helpers ── */
+/* StatusCards: 2 kolom normal, 1 kolom di layar <360px */
+@media (max-width: 359px) {
+  .grid-2col {
+    grid-template-columns: 1fr !important;
+  }
 }
 
+/* ── Skeleton shimmer ── */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--teal-50) 0%,
+    #e2f4f2 40%,
+    var(--teal-50) 80%
+  );
+  background-size: 600px 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+  border-radius: var(--radius-md);
+}
+
+/* ── Status chips ── */
+.status-safe    { color: var(--safe);    background: rgba(14, 165, 110, 0.09); }
+.status-warning { color: var(--warning); background: rgba(224, 154, 16, 0.09); }
+.status-danger  { color: var(--danger);  background: rgba(232, 64, 64, 0.09); }
+
+/* ── Glass ── */
 .glass {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* ── Focus ring ── */
+:focus-visible {
+  outline: 2px solid var(--teal-500);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }

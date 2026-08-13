@@ -55,7 +55,7 @@ export default function Notifications({
   const [notifs, setNotifs]         = useState<Notification[]>([]);
   const [prevStatus, setPrevStatus] = useState<FloodStatus | null>(null);
   const [alarmOn, setAlarmOn]       = useState(false);
-  const { sendLocalNotification }   = usePushNotification();
+  const { sendLocalNotification, syncStatusToSW } = usePushNotification();
   const alarmingStatus              = useRef<FloodStatus | null>(null);
 
   useEffect(() => { setNotifs(loadNotifs()); }, []);
@@ -106,6 +106,8 @@ export default function Notifications({
     });
 
     sendLocalNotification(newNotif.title, newNotif.message, currentStatus, ketinggian);
+    // Sinkronkan status ke SW agar bisa notif saat app ditutup
+    syncStatusToSW(currentStatus, ketinggian, thresholds);
 
     if (currentStatus === 'bahaya' || currentStatus === 'kritis') {
       stopAlarm();
@@ -118,7 +120,7 @@ export default function Notifications({
     }
 
     setPrevStatus(currentStatus);
-  }, [currentStatus, ketinggian, prevStatus, thresholds, sendLocalNotification]);
+  }, [currentStatus, ketinggian, prevStatus, thresholds, sendLocalNotification, syncStatusToSW]);
 
   useEffect(() => () => stopAlarm(), []);
 

@@ -82,20 +82,8 @@ export default function NotificationPermission() {
 }
 
 function GrantedBadge() {
-  return (
-    <div
-      className="flex items-center gap-2 px-3 py-2.5 rounded-xl"
-      style={{
-        background: 'rgba(14,165,110,0.08)',
-        border: '1px solid rgba(14,165,110,0.2)',
-      }}
-    >
-      <CheckCircle size={13} style={{ color: '#0ea56e', flexShrink: 0 }} strokeWidth={2.2} />
-      <span style={{ fontSize: '12px', fontWeight: 600, color: '#0ea56e' }}>
-        Notifikasi aktif — alarm akan dikirim saat status berubah
-      </span>
-    </div>
-  );
+  // Sudah granted — tidak perlu tampilkan banner apapun
+  return null;
 }
 
 function DeniedBadge() {
